@@ -38,17 +38,19 @@ murasaki::Debugger * murasaki::debugger;
  */
 // Following block is just sample.
 #if 0
-extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi4;
 extern UART_HandleTypeDef huart2;
 #endif
 extern UART_HandleTypeDef huart3;
+extern I2C_HandleTypeDef hi2c1;
 
 /* -------------------- PLATFORM ALGORITHM ------------------------- */
 
 void TaskBodyFunction(const void* ptr);
+void I2cSearch(murasaki::I2CMasterStrategy * master);
+
 
 void InitPlatform()
 {
@@ -73,7 +75,15 @@ void InitPlatform()
     // Set the debugger as AutoRePrint mode, for the easy operation.
     murasaki::debugger->AutoRePrint();  // type any key to show history.
 
+    // Setup I2C.
+    murasaki::platform.i2cMaster = new murasaki::I2cMaster(&hi2c1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.i2cMaster)
 
+    // Status LED
+    murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.st0)
+    murasaki::platform.st1 = new murasaki::BitOut(ST1_GPIO_Port, ST1_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.st1)
 
     // For demonstration, one GPIO LED port is reserved.
     // The port and pin names are fined by CubeMX.
@@ -109,15 +119,22 @@ void ExecPlatform()
     // counter for the demonstration.
     static int count = 0;
 
+    murasaki::platform.st0->Clear();
+    murasaki::platform.st1->Set();
 
     murasaki::platform.task1->Start();
 
+    I2cSearch(murasaki::platform.i2cMaster);
 
     // Loop forever
     while (true) {
 
         // print a message with counter value to the console.
         murasaki::debugger->Printf("Hello %d \n", count);
+
+        murasaki::platform.st0->Toggle();
+        murasaki::platform.st1->Toggle();
+
 
         // update the counter value.
         count++;
@@ -279,9 +296,9 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
 {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
-//    if (murasaki::platform.i2c_master->TransmitCompleteCallback(hi2c))
-//        return;
+#if 1
+    if (murasaki::platform.i2cMaster->TransmitCompleteCallback(hi2c))
+        return;
 #endif
 }
 
@@ -302,8 +319,8 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master rx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
-    if (murasaki::platform.i2c_master->ReceiveCompleteCallback(hi2c))
+#if 1
+    if (murasaki::platform.i2cMaster->ReceiveCompleteCallback(hi2c))
     return;
 #endif
 }
@@ -373,8 +390,8 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef * hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master error related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
-    if (murasaki::platform.i2c_master->HandleError(hi2c))
+#if 1
+    if (murasaki::platform.i2cMaster->HandleError(hi2c))
     return;
 #endif
 }
@@ -451,4 +468,33 @@ void TaskBodyFunction(const void* ptr)
         murasaki::platform.led->Toggle();  // toggling LED
         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
     }
+}
+
+
+void I2cSearch(murasaki::I2CMasterStrategy * master)
+{
+    uint8_t tx_buf[1];
+
+    murasaki::debugger->Printf("            Probing I2C devices \n");
+    murasaki::debugger->Printf("   | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
+    murasaki::debugger->Printf("---+------------------------------------------------\n");
+
+    // Search raw
+    for (int raw = 0; raw < 128; raw += 16) {
+        // Search column
+        murasaki::debugger->Printf("%2x |", raw);
+        for (int col = 0; col < 16; col++) {
+            murasaki::I2cStatus result;
+            // check whether device exist or not.
+            result = master->Transmit(raw + col, tx_buf, 0);
+            if (result == murasaki::ki2csOK)       // device acknowledged.
+                murasaki::debugger->Printf(" %2X", raw + col);
+            else if (result == murasaki::ki2csNak)  // no device
+                murasaki::debugger->Printf(" --");
+            else
+                murasaki::debugger->Printf(" ??");  // unpredicted error.
+        }
+        murasaki::debugger->Printf("\n");
+    }
+
 }
