@@ -109,70 +109,7 @@ void ExecPlatform()
     // counter for the demonstration.
     static int count = 0;
 
-    // Following blocks are sample.
-#if 0
-    {
-        uint8_t data[5] = { 1, 2, 3, 4, 5 };
-        murasaki::UartStatus stat;
 
-        stat = murasaki::platform.uart->Transmit(
-                                                 data,
-                                                 5);
-
-    }
-
-    {
-        uint8_t data[5] = { 1, 2, 3, 4, 5 };
-        murasaki::I2cStatus stat;
-
-        stat = murasaki::platform.i2cMaster->Transmit(
-                                                      127,
-                                                      data,
-                                                      5);
-    }
-
-    {
-        uint8_t data[5];
-        murasaki::I2cStatus stat;
-
-        stat = murasaki::platform.i2cSlave->Receive(
-                                                    data,
-                                                    5);
-
-    }
-
-    {
-        // Create a slave adapter. This object specify the protocol and slave select pin
-        murasaki::SpiSlaveAdapterStrategy * slave_spec;
-        slave_spec = new murasaki::SpiSlaveAdapter(
-                                                   murasaki::kspoFallThenRise,
-                                                   murasaki::ksphLatchThenShift,
-                                                   SPI_SLAVE_SEL_GPIO_Port,
-                                                   SPI_SLAVE_SEL_Pin
-                                                   );
-
-        // Transmit and receive data through SPI
-        uint8_t tx_data[5] = { 1, 2, 3, 4, 5 };
-        uint8_t rx_data[5];
-        murasaki::SpiStatus stat;
-        stat = murasaki::platform.spiMaster->TransmitAndReceive(
-                                                                slave_spec,
-                                                                tx_data,
-                                                                rx_data,
-                                                                5);
-    }
-
-    {
-        // Transmit and receive data through SPI
-        uint8_t tx_data[5] = { 1, 2, 3, 4, 5 };
-        uint8_t rx_data[5];
-        murasaki::SpiStatus stat;
-        stat = murasaki::platform.spiSlave->TransmitAndReceive(
-                                                               tx_data,
-                                                               rx_data,
-                                                               5);
-    }
-#endif
     murasaki::platform.task1->Start();
 
 

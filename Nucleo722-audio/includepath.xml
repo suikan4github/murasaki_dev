@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cdtprojectproperties>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.IncludePaths">
+<language name="s,S">
+<includepath/>
+
+</language>
+<language name="C Source File">
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/include</includepath>
+<includepath>Inc</includepath>
+<includepath>Drivers/CMSIS/Include</includepath>
+<includepath>Drivers/CMSIS/Device/ST/STM32F7xx/Include</includepath>
+<includepath>Drivers/STM32F7xx_HAL_Driver/Inc</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS</includepath>
+<includepath>Drivers/STM32F7xx_HAL_Driver/Inc/Legacy</includepath>
+
+</language>
+<language name="C++ Source File">
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/include</includepath>
+<includepath>Inc</includepath>
+<includepath>Drivers/CMSIS/Include</includepath>
+<includepath>Drivers/CMSIS/Device/ST/STM32F7xx/Include</includepath>
+<includepath>Drivers/STM32F7xx_HAL_Driver/Inc</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS</includepath>
+<includepath>Drivers/STM32F7xx_HAL_Driver/Inc/Legacy</includepath>
+<includepath>murasaki/Inc</includepath>
+<includepath>murasaki/Inc-tp</includepath>
+
+</language>
+<language name="Object File">
+
+</language>
+</section>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.Macros">
+<language name="s,S">
+
+</language>
+<language name="C Source File">
+<macro>
+<name>USE_HAL_DRIVER</name><value/>
+</macro>
+<macro>
+<name>STM32F722xx</name><value/>
+</macro>
+<macro>
+<name>DEBUG</name><value/>
+</macro>
+
+</language>
+<language name="C++ Source File">
+<macro>
+<name>USE_HAL_DRIVER</name><value/>
+</macro>
+<macro>
+<name>STM32F722xx</name><value/>
+</macro>
+<macro>
+<name>DEBUG</name><value/>
+</macro>
+
+</language>
+<language name="Object File">
+
+</language>
+</section>
+</cdtprojectproperties>
