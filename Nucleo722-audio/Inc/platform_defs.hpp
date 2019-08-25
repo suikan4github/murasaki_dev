@@ -39,6 +39,8 @@ struct Platform
 
     I2CMasterStrategy * i2cMaster;  ///< I2C Master under test
 
+    AudioCodecStrategy * codec;    ///< Audio Codec.
+
     BitOutStrategy * led;           ///< GP out under test
     BitOutStrategy * st0;           ///< GP out under test
     BitOutStrategy * st1;           ///< GP out under test
@@ -67,17 +69,11 @@ struct Platform
  */
 extern Platform platform;
 
-
-
-
 /**
  * \}
  * end of defgroup PLATFORM_GROUP
  */
 
-
-
 } /* namespace murasaki */
-
 
 #endif /* PLATFORM_DEFS_HPP_ */

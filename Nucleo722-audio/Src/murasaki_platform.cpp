@@ -21,7 +21,6 @@
 
 // Essential definition.
 // Do not delete
-
 murasaki::Platform murasaki::platform;
 murasaki::Debugger * murasaki::debugger;
 
@@ -51,7 +50,6 @@ extern I2C_HandleTypeDef hi2c1;
 void TaskBodyFunction(const void* ptr);
 void I2cSearch(murasaki::I2CMasterStrategy * master);
 
-
 void InitPlatform()
 {
     // UART device setting for console interface.
@@ -79,6 +77,13 @@ void InitPlatform()
     murasaki::platform.i2cMaster = new murasaki::I2cMaster(&hi2c1);
     MURASAKI_ASSERT(nullptr != murasaki::platform.i2cMaster)
 
+    // audio CODEC
+    murasaki::platform.codec = new murasaki::Adau1361(
+                                                      48000,
+                                                      12000000,
+                                                      murasaki::platform.i2cMaster,
+                                                      0x38);
+
     // Status LED
     murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
     MURASAKI_ASSERT(nullptr != murasaki::platform.st0)
@@ -92,12 +97,12 @@ void InitPlatform()
 
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
-                                                  "task1",
-                                                  256,
-                                                  1,
-                                                  nullptr,
-                                                  &TaskBodyFunction
-                                                  );
+                                                        "task1",
+                                                        256,
+                                                        1,
+                                                        nullptr,
+                                                        &TaskBodyFunction
+                                                        );
     MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
 
     // Following block is just for sample.
@@ -126,6 +131,8 @@ void ExecPlatform()
 
     I2cSearch(murasaki::platform.i2cMaster);
 
+    murasaki::platform.codec->start();
+
     // Loop forever
     while (true) {
 
@@ -134,7 +141,6 @@ void ExecPlatform()
 
         murasaki::platform.st0->Toggle();
         murasaki::platform.st1->Toggle();
-
 
         // update the counter value.
         count++;
@@ -162,7 +168,7 @@ void ExecPlatform()
  * murasaki::Uart::TransmissionCompleteCallback() function.
  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef * huart)
-{
+                             {
     // Poll all uart tx related interrupt receivers.
     // If hit, return. If not hit,check next.
     if (murasaki::platform.uart_console->TransmitCompleteCallback(huart))
@@ -186,7 +192,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef * huart)
  * murasaki::Uart::ReceiveCompleteCallback() function.
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef * huart)
-{
+                             {
     // Poll all uart rx related interrupt receivers.
     // If hit, return. If not hit,check next.
     if (murasaki::platform.uart_console->ReceiveCompleteCallback(huart))
@@ -218,7 +224,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 /* -------------------------- SPI ---------------------------------- */
-
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
@@ -274,7 +279,6 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef * hspi) {
 
 /* -------------------------- I2C ---------------------------------- */
 
-
 #ifdef HAL_I2C_MODULE_ENABLED
 
 /**
@@ -293,7 +297,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef * hspi) {
  * murasaki::I2c::TransmitCompleteCallback() function.
  */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
-{
+                                  {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 1
@@ -321,7 +325,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // If hit, return. If not hit,check next.
 #if 1
     if (murasaki::platform.i2cMaster->ReceiveCompleteCallback(hi2c))
-    return;
+        return;
 #endif
 }
 /**
@@ -340,7 +344,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef * hi2c) {
  * murasaki::I2cSlave::TransmitCompleteCallback() function.
  */
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef * hi2c)
-{
+                                 {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 0
@@ -392,15 +396,13 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef * hi2c) {
     // If hit, return. If not hit,check next.
 #if 1
     if (murasaki::platform.i2cMaster->HandleError(hi2c))
-    return;
+        return;
 #endif
 }
 
 #endif
 
 /* -------------------------- GPIO ---------------------------------- */
-
-
 
 /**
  * @brief Optional interrupt handling of EXTI
@@ -418,7 +420,7 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef * hi2c) {
  * macro to identify that EXTI is FOO_Pin
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
+                            {
 #if 0
     // Sample of the EXTI call back.
     // USER_Btn is a standard name of the user push button switch of the Nucleo F722.
@@ -441,7 +443,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void CustomAssertFailed(uint8_t* file, uint32_t line)
                         {
     murasaki::debugger->Printf("Wrong parameters value: file %s on line %d\n",
-                               file, line);
+                               file,
+                               line);
     // To stop the execusion, raise assert.
     MURASAKI_ASSERT(false);
 }
@@ -457,7 +460,6 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
     MURASAKI_ASSERT(false);
 }
 
-
 /* ------------------ User Function -------------------------- */
 // Task body of the murasaki::platform.task1
 void TaskBodyFunction(const void* ptr)
@@ -470,9 +472,8 @@ void TaskBodyFunction(const void* ptr)
     }
 }
 
-
 void I2cSearch(murasaki::I2CMasterStrategy * master)
-{
+               {
     uint8_t tx_buf[1];
 
     murasaki::debugger->Printf("            Probing I2C devices \n");
