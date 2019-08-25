@@ -107,7 +107,7 @@ void InitPlatform()
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
-                                                        256,
+                                                        512,
                                                         1,
                                                         nullptr,
                                                         &TaskBodyFunction
@@ -474,7 +474,7 @@ void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
 }
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ReceiveCallback(hsai, 0)) {
+    if (murasaki::platform.audio->ReceiveCallback(hsai, 1)) {
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
         return;
