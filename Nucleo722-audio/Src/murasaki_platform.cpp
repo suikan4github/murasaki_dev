@@ -135,9 +135,6 @@ void ExecPlatform()
     float * l_rx = new float[CHANNEL_LEN];
     float * r_rx = new float[CHANNEL_LEN];
 
-    // counter for the demonstration.
-    static int count = 0;
-
     murasaki::platform.st0->Clear();
     murasaki::platform.st1->Set();
 
@@ -150,22 +147,33 @@ void ExecPlatform()
     murasaki::SetSyslogFacilityMask(murasaki::kfaAudio | murasaki::kfaSai);
     murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
 
-    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+    int count = 0;
 
     // Loop forever
     while (true) {
 
-        // print a message with counter value to the console.
-        murasaki::debugger->Printf("Hello %d \n", count);
+        if (count > 10) {
+            // disable debug message printing
+            murasaki::SetSyslogFacilityMask(murasaki::kfaAll);
+            murasaki::SetSyslogSererityThreshold(murasaki::kseError);
+        }
+        else
+            count++;
 
-        murasaki::platform.st0->Toggle();
-        murasaki::platform.st1->Toggle();
+        murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+        /*
+         // print a message with counter value to the console.
+         murasaki::debugger->Printf("Hello %d \n", count);
 
-        // update the counter value.
-        count++;
+         murasaki::platform.st0->Toggle();
+         murasaki::platform.st1->Toggle();
 
-        // wait for a while
-        murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(500));
+         // update the counter value.
+         count++;
+
+         // wait for a while
+         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(500));
+         */
     }
 }
 
@@ -458,13 +466,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 /* ------------------ SAI  -------------------------- */
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ReceiveCallback(hsai, 0))
+    if (murasaki::platform.audio->ReceiveCallback(hsai, 0)) {
+        murasaki::platform.st0->Set();
+        murasaki::platform.st1->Clear();
         return;
+    }
 }
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ReceiveCallback(hsai, 0))
+    if (murasaki::platform.audio->ReceiveCallback(hsai, 0)) {
+        murasaki::platform.st0->Clear();
+        murasaki::platform.st1->Set();
         return;
+    }
 }
 
 void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
