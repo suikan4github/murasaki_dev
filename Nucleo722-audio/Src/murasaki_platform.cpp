@@ -16,7 +16,7 @@
 // Include the prototype  of functions of this file.
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
-
+#define CHANNEL_LEN 48
 /* -------------------- PLATFORM VARIABLES-------------------------- */
 
 // Essential definition.
@@ -44,7 +44,8 @@ extern UART_HandleTypeDef huart2;
 #endif
 extern UART_HandleTypeDef huart3;
 extern I2C_HandleTypeDef hi2c1;
-
+extern SAI_HandleTypeDef hsai_BlockA1;
+extern SAI_HandleTypeDef hsai_BlockB1;
 /* -------------------- PLATFORM ALGORITHM ------------------------- */
 
 void TaskBodyFunction(const void* ptr);
@@ -84,6 +85,14 @@ void InitPlatform()
                                                       murasaki::platform.i2cMaster,
                                                       0x38);
 
+    murasaki::platform.audioAdapter = new murasaki::SaiAudioAdaptor(
+                                                                    &hsai_BlockA1,
+                                                                    &hsai_BlockB1);
+    murasaki::platform.audio = new murasaki::DuplexAudio(
+                                                         murasaki::platform.audioAdapter,
+                                                         2,
+                                                         CHANNEL_LEN);
+
     // Status LED
     murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
     MURASAKI_ASSERT(nullptr != murasaki::platform.st0)
@@ -121,6 +130,11 @@ void InitPlatform()
 
 void ExecPlatform()
 {
+    float * l_tx = new float[CHANNEL_LEN];
+    float * r_tx = new float[CHANNEL_LEN];
+    float * l_rx = new float[CHANNEL_LEN];
+    float * r_rx = new float[CHANNEL_LEN];
+
     // counter for the demonstration.
     static int count = 0;
 
@@ -132,6 +146,11 @@ void ExecPlatform()
     I2cSearch(murasaki::platform.i2cMaster);
 
     murasaki::platform.codec->start();
+
+    murasaki::SetSyslogFacilityMask(murasaki::kfaAudio | murasaki::kfaSai);
+    murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
+
+    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
     // Loop forever
     while (true) {
@@ -436,6 +455,22 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             murasaki::platform.sync_with_button->Release();
     }
 #endif
+}
+/* ------------------ SAI  -------------------------- */
+void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->ReceiveCallback(hsai, 0))
+        return;
+}
+
+void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->ReceiveCallback(hsai, 0))
+        return;
+}
+
+void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->ErrorCallback(hsai))
+        return;
+
 }
 
 /* ------------------ ASSERTION AND ERROR -------------------------- */
