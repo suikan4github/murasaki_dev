@@ -90,7 +90,6 @@ void InitPlatform()
                                                                     &hsai_BlockB1);
     murasaki::platform.audio = new murasaki::DuplexAudio(
                                                          murasaki::platform.audioAdapter,
-                                                         2,
                                                          CHANNEL_LEN);
 
     // Status LED
