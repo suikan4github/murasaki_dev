@@ -137,7 +137,7 @@ void ExecPlatform()
     murasaki::platform.st0->Clear();
     murasaki::platform.st1->Set();
 
-    murasaki::platform.task1->Start();
+//    murasaki::platform.task1->Start();
 
     I2cSearch(murasaki::platform.i2cMaster);
 
