@@ -16,7 +16,8 @@
 // Include the prototype  of functions of this file.
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
-#define CHANNEL_LEN 48
+#define CHANNEL_LEN 16
+
 /* -------------------- PLATFORM VARIABLES-------------------------- */
 
 // Essential definition.
@@ -151,7 +152,7 @@ void ExecPlatform()
     // Loop forever
     while (true) {
 
-        if (count > 10) {
+        if (count > 5) {
             // disable debug message printing
             murasaki::SetSyslogFacilityMask(murasaki::kfaAll);
             murasaki::SetSyslogSererityThreshold(murasaki::kseError);
