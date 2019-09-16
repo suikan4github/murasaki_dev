@@ -12,6 +12,7 @@
 
 // Include the murasaki class library.
 #include "murasaki.hpp"
+#include "murasaki_syslog.hpp"
 
 // Include the prototype  of functions of this file.
 
@@ -126,10 +127,13 @@ void InitPlatform()
     murasaki::platform.spiSlave = new murasaki::SpiSlave(&hspi4);
 #endif
 
+    murasaki::InitCycleCounter();
+
 }
 
 void ExecPlatform()
 {
+
     float * l_tx = new float[CHANNEL_LEN];
     float * r_tx = new float[CHANNEL_LEN];
     float * l_rx = new float[CHANNEL_LEN];
@@ -138,29 +142,30 @@ void ExecPlatform()
     murasaki::platform.st0->Clear();
     murasaki::platform.st1->Set();
 
-//    murasaki::platform.task1->Start();
+    // murasaki::platform.task1->Start();
 
     I2cSearch(murasaki::platform.i2cMaster);
 
     murasaki::platform.codec->start();
 
-    murasaki::SetSyslogFacilityMask(murasaki::kfaAudio | murasaki::kfaSai);
-    murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
+    murasaki::SetSyslogFacilityMask(murasaki::kfaAudio);
+    murasaki::SetSyslogSererityThreshold(murasaki::kseNotice);
 
     int count = 0;
+    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
     // Loop forever
     while (true) {
 
-        if (count > 5) {
+        if (count > 10) {
             // disable debug message printing
-            murasaki::SetSyslogFacilityMask(murasaki::kfaAll);
             murasaki::SetSyslogSererityThreshold(murasaki::kseError);
         }
         else
             count++;
 
-        murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+        murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(500));
+
         /*
          // print a message with counter value to the console.
          murasaki::debugger->Printf("Hello %d \n", count);
@@ -464,7 +469,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 #endif
 }
+
 /* ------------------ SAI  -------------------------- */
+#ifdef HAL_SAI_MODULE_ENABLED
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer halfway.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
+ */
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
     if (murasaki::platform.audio->ReceiveCallback(hsai, 0)) {
         murasaki::platform.st0->Set();
@@ -473,6 +489,15 @@ void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
     }
 }
 
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer complete.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
+ */
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
     if (murasaki::platform.audio->ReceiveCallback(hsai, 1)) {
         murasaki::platform.st0->Clear();
@@ -481,11 +506,22 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
     }
 }
 
+/**
+ * @brief Optional SAI error interrupt handler.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * The error have to be forwarded to murasaki::DuplexAudio::ErrorCallback().
+ * Note that DuplexAudio::ErrorCallback() trigger a hard fault.
+ * So, never return.
+ */
+
 void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
     if (murasaki::platform.audio->ErrorCallback(hsai))
         return;
-
 }
+
+#endif
 
 /* ------------------ ASSERTION AND ERROR -------------------------- */
 
