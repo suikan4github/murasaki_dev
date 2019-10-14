@@ -17,7 +17,7 @@
 // Include the prototype  of functions of this file.
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
-#define CHANNEL_LEN 16
+#define CHANNEL_LEN 48
 
 /* -------------------- PLATFORM VARIABLES-------------------------- */
 
@@ -109,7 +109,7 @@ void InitPlatform()
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
                                                         2048,
-                                                        1,
+                                                        osPriorityRealtime - osPriorityIdle,
                                                         nullptr,
                                                         &TaskBodyFunction
                                                         );
@@ -131,54 +131,26 @@ void InitPlatform()
 
 }
 
+const int bufcount = 48 * 2;
+
+const int bufsize = bufcount * 4;
+
+uint8_t buf[bufsize];
+
 void ExecPlatform()
 {
-
-    float * l_tx = new float[CHANNEL_LEN];
-    float * r_tx = new float[CHANNEL_LEN];
-    float * l_rx = new float[CHANNEL_LEN];
-    float * r_rx = new float[CHANNEL_LEN];
 
     murasaki::platform.st0->Clear();
     murasaki::platform.st1->Set();
 
-    // murasaki::platform.task1->Start();
-
     I2cSearch(murasaki::platform.i2cMaster);
 
-    murasaki::platform.codec->start();
+    murasaki::platform.task1->Start();
 
-    murasaki::SetSyslogFacilityMask(murasaki::kfaAudio);
-    murasaki::SetSyslogSererityThreshold(murasaki::kseNotice);
-
-    int count = 0;
-    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
-
-    // Loop forever
-    while (true) {
-
-        if (count > 10) {
-            // disable debug message printing
-            murasaki::SetSyslogSererityThreshold(murasaki::kseError);
-        }
-        else
-            count++;
-
-        murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(500));
-
-        /*
-         // print a message with counter value to the console.
-         murasaki::debugger->Printf("Hello %d \n", count);
-
-         murasaki::platform.st0->Toggle();
-         murasaki::platform.st1->Toggle();
-
-         // update the counter value.
-         count++;
-
-         // wait for a while
-         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(500));
-         */
+    while (true)    // dummy loop
+    {
+        murasaki::platform.led->Toggle();  // toggling LED
+        murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
     }
 }
 
@@ -550,11 +522,34 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
 void TaskBodyFunction(const void* ptr)
                       {
 
-    while (true)    // dummy loop
-    {
-        murasaki::platform.led->Toggle();  // toggling LED
-        murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
+    float * l_tx = new float[CHANNEL_LEN];
+    float * r_tx = new float[CHANNEL_LEN];
+    float * l_rx = new float[CHANNEL_LEN];
+    float * r_rx = new float[CHANNEL_LEN];
+
+    murasaki::platform.codec->start();
+
+    murasaki::SetSyslogFacilityMask(murasaki::kfaAudio);
+    murasaki::SetSyslogSererityThreshold(murasaki::kseNotice);
+
+    int count = 0;
+    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+//    HAL_SAI_Receive_DMA(&hsai_BlockB1, buf, bufcount);
+
+    // Loop forever
+    while (true) {
+
+        if (count > 10) {
+            // disable debug message printing
+            murasaki::SetSyslogSererityThreshold(murasaki::kseError);
+        }
+        else
+            count++;
+
+        murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+
     }
+
 }
 
 void I2cSearch(murasaki::I2CMasterStrategy * master)
