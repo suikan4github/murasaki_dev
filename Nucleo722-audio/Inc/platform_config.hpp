@@ -20,6 +20,7 @@
 // E X A M P L E
 // Un-comment the folliwing line will override the value definition inside platform_config.hpp
 // #define PLATFORM_CONFIG_DEBUG_LINE_SIZE  128
+#define PLATFORM_CONFIG_DEBUG_BUFFER_SIZE 32768
 
 // Define following macro as true to disable the assertion inside murasaki class library.
 #define MURASAKI_CONFIG_NODEBUG false

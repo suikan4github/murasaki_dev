@@ -15,6 +15,7 @@
 #include "murasaki_syslog.hpp"
 
 // Include the prototype  of functions of this file.
+#include <math.h>
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
 #define CHANNEL_LEN 48
@@ -454,7 +455,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
  */
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ReceiveCallback(hsai, 0)) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
         murasaki::platform.st0->Set();
         murasaki::platform.st1->Clear();
         return;
@@ -471,7 +472,7 @@ void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
  * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
  */
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ReceiveCallback(hsai, 1)) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
         return;
@@ -519,22 +520,34 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
 
 /* ------------------ User Function -------------------------- */
 // Task body of the murasaki::platform.task1
-void TaskBodyFunction(const void* ptr)
-                      {
+void TaskBodyFunction(const void* ptr) {
+    // phase of the oscillator.
+    // Let's make phase [0,36000) representing [0,360).
+    signed int centidegree = 0;
 
+    const int two_pi = 36000;
+
+    const float centidegree_2_radian = 2.0 * 3.141592 / two_pi;  // 2pi = 36000
+
+    const float Hz = two_pi / 48000.0;                          // 2pi / Fs
+
+    const int phase_step = 1000 * Hz;                           // 1kHz
+
+    // audio buffer
     float * l_tx = new float[CHANNEL_LEN];
     float * r_tx = new float[CHANNEL_LEN];
     float * l_rx = new float[CHANNEL_LEN];
     float * r_rx = new float[CHANNEL_LEN];
 
-    murasaki::platform.codec->start();
+    murasaki::platform.codec->Start();
 
     murasaki::SetSyslogFacilityMask(murasaki::kfaAudio);
     murasaki::SetSyslogSererityThreshold(murasaki::kseNotice);
 
     int count = 0;
     murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
-//    HAL_SAI_Receive_DMA(&hsai_BlockB1, buf, bufcount);
+
+    murasaki::platform.codec->SetHpOutputGain(-12.0, -12.0);  // right gain in dB, left gain in dB
 
     // Loop forever
     while (true) {
@@ -545,7 +558,15 @@ void TaskBodyFunction(const void* ptr)
         }
         else
             count++;
-
+#if 1
+        // fill the buffer by 1kHz sine wave.
+        for (int i = 0; i < CHANNEL_LEN; i++) {
+            l_tx[i] = sin(centidegree * centidegree_2_radian);
+            centidegree += phase_step;
+            if (centidegree >= two_pi)
+                centidegree = 0;
+        }
+#endif
         murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
     }
