@@ -523,15 +523,6 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
 void TaskBodyFunction(const void* ptr) {
     // phase of the oscillator.
     // Let's make phase [0,36000) representing [0,360).
-    signed int centidegree = 0;
-
-    const int two_pi = 36000;
-
-    const float centidegree_2_radian = 2.0 * 3.141592 / two_pi;  // 2pi = 36000
-
-    const float Hz = two_pi / 48000.0;                          // 2pi / Fs
-
-    const int phase_step = 1000 * Hz;                           // 1kHz
 
     // audio buffer
     float * l_tx = new float[CHANNEL_LEN];
@@ -547,7 +538,8 @@ void TaskBodyFunction(const void* ptr) {
     int count = 0;
     murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
-    murasaki::platform.codec->SetHpOutputGain(-12.0, -12.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetHpOutputGain(0.0, 0.0);    // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetLineInputGain(0.0, 0.0);   // right gain in dB, left gain in dB
 
     // Loop forever
     while (true) {
@@ -561,10 +553,8 @@ void TaskBodyFunction(const void* ptr) {
 #if 1
         // fill the buffer by 1kHz sine wave.
         for (int i = 0; i < CHANNEL_LEN; i++) {
-            l_tx[i] = sin(centidegree * centidegree_2_radian);
-            centidegree += phase_step;
-            if (centidegree >= two_pi)
-                centidegree = 0;
+            l_tx[i] = l_rx[i];
+            r_tx[i] = r_rx[i];
         }
 #endif
         murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
