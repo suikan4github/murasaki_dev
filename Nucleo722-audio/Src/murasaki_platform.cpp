@@ -61,18 +61,18 @@ void InitPlatform()
     // referred here.
     murasaki::platform.uart_console = new murasaki::DebuggerUart(&huart3);
     while (nullptr == murasaki::platform.uart_console)
-        ;   // stop here on the memory allocation failure.
+        ;  // stop here on the memory allocation failure.
 
     // UART is used for logging port.
     // At least one logger is needed to run the debugger class.
     murasaki::platform.logger = new murasaki::UartLogger(murasaki::platform.uart_console);
     while (nullptr == murasaki::platform.logger)
-        ;   // stop here on the memory allocation failure.
+        ;  // stop here on the memory allocation failure.
 
     // Setting the debugger
     murasaki::debugger = new murasaki::Debugger(murasaki::platform.logger);
     while (nullptr == murasaki::debugger)
-        ;   // stop here on the memory allocation failure.
+        ;  // stop here on the memory allocation failure.
 
     // Set the debugger as AutoRePrint mode, for the easy operation.
     murasaki::debugger->AutoRePrint();  // type any key to show history.
@@ -109,9 +109,9 @@ void InitPlatform()
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
-                                                        2048,
-                                                        osPriorityRealtime - osPriorityIdle,
-                                                        nullptr,
+                                                        2048, /* Stack size*/
+                                                        murasaki::ktpRealtime,
+                                                        nullptr, /* Stack must be allocated by system */
                                                         &TaskBodyFunction
                                                         );
     MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
@@ -132,15 +132,8 @@ void InitPlatform()
 
 }
 
-const int bufcount = 48 * 2;
-
-const int bufsize = bufcount * 4;
-
-uint8_t buf[bufsize];
-
 void ExecPlatform()
 {
-
     murasaki::platform.st0->Clear();
     murasaki::platform.st1->Set();
 
@@ -148,10 +141,12 @@ void ExecPlatform()
 
     murasaki::platform.task1->Start();
 
-    while (true)    // dummy loop
+    while (true)  // dummy loop
     {
         murasaki::platform.led->Toggle();  // toggling LED
         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
+
+        murasaki::debugger->Printf("IPSR : %08x \n", __get_IPSR());
     }
 }
 
@@ -472,9 +467,14 @@ void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
  * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
  */
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
+    static int count = 0;
     if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
+        if (!count) {
+            count++;
+            murasaki::debugger->Printf("ISPR : %08x \n", __get_IPSR());
+        }
         return;
     }
 }
@@ -484,13 +484,13 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
  * @ingroup MURASAKI_PLATFORM_GROUP
  * @param hsai Handler of the SAI device.
  * @details
- * The error have to be forwarded to murasaki::DuplexAudio::ErrorCallback().
- * Note that DuplexAudio::ErrorCallback() trigger a hard fault.
+ * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
+ * Note that DuplexAudio::HandleError() trigger a hard fault.
  * So, never return.
  */
 
 void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
-    if (murasaki::platform.audio->ErrorCallback(hsai))
+    if (murasaki::platform.audio->HandleError(hsai))
         return;
 }
 
@@ -538,8 +538,8 @@ void TaskBodyFunction(const void* ptr) {
     int count = 0;
     murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
-    murasaki::platform.codec->SetHpOutputGain(0.0, 0.0);    // right gain in dB, left gain in dB
-    murasaki::platform.codec->SetLineInputGain(0.0, 0.0);   // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetHpOutputGain(0.0, 0.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetLineInputGain(0.0, 0.0);  // right gain in dB, left gain in dB
 
     // Loop forever
     while (true) {
@@ -579,7 +579,7 @@ void I2cSearch(murasaki::I2CMasterStrategy * master)
             murasaki::I2cStatus result;
             // check whether device exist or not.
             result = master->Transmit(raw + col, tx_buf, 0);
-            if (result == murasaki::ki2csOK)       // device acknowledged.
+            if (result == murasaki::ki2csOK)  // device acknowledged.
                 murasaki::debugger->Printf(" %2X", raw + col);
             else if (result == murasaki::ki2csNak)  // no device
                 murasaki::debugger->Printf(" --");
