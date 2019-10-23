@@ -146,7 +146,6 @@ void ExecPlatform()
         murasaki::platform.led->Toggle();  // toggling LED
         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
 
-        murasaki::debugger->Printf("IPSR : %08x \n", __get_IPSR());
     }
 }
 
@@ -467,14 +466,9 @@ void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
  * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
  */
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
-    static int count = 0;
     if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
-        if (!count) {
-            count++;
-            murasaki::debugger->Printf("ISPR : %08x \n", __get_IPSR());
-        }
         return;
     }
 }
@@ -550,13 +544,12 @@ void TaskBodyFunction(const void* ptr) {
         }
         else
             count++;
-#if 1
-        // fill the buffer by 1kHz sine wave.
+
+        // Talk through
         for (int i = 0; i < CHANNEL_LEN; i++) {
             l_tx[i] = l_rx[i];
             r_tx[i] = r_rx[i];
         }
-#endif
         murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
     }
