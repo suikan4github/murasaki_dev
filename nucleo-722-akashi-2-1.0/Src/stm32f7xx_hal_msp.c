@@ -102,7 +102,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     PB8     ------> I2C1_SCL
     PB9     ------> I2C1_SDA 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_8|ST0_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -143,7 +143,7 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     PB8     ------> I2C1_SCL
     PB9     ------> I2C1_SDA 
     */
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_8|ST0_Pin);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_8|GPIO_PIN_9);
 
     /* I2C1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(I2C1_EV_IRQn);
@@ -375,7 +375,6 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* hsai)
 
 void HAL_SAI_MspDeInit(SAI_HandleTypeDef* hsai)
 {
-
 /* SAI1 */
     if(hsai->Instance==SAI1_Block_A)
     {

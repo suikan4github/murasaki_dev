@@ -295,7 +295,7 @@ static void MX_SAI1_Init(void)
 
   /* USER CODE END SAI1_Init 1 */
   hsai_BlockA1.Instance = SAI1_Block_A;
-  hsai_BlockA1.Init.AudioMode = SAI_MODESLAVE_TX;
+  hsai_BlockA1.Init.AudioMode = SAI_MODESLAVE_RX;
   hsai_BlockA1.Init.Synchro = SAI_ASYNCHRONOUS;
   hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
   hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
@@ -308,7 +308,7 @@ static void MX_SAI1_Init(void)
     Error_Handler();
   }
   hsai_BlockB1.Instance = SAI1_Block_B;
-  hsai_BlockB1.Init.AudioMode = SAI_MODESLAVE_RX;
+  hsai_BlockB1.Init.AudioMode = SAI_MODESLAVE_TX;
   hsai_BlockB1.Init.Synchro = SAI_SYNCHRONOUS;
   hsai_BlockB1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
   hsai_BlockB1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
@@ -497,10 +497,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
-    
-    
-    
-
   /* USER CODE BEGIN 5 */
   InitPlatform();
   ExecPlatform();

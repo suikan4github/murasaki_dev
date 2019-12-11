@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "murasaki_platform.hpp"
 
 /* USER CODE END Includes */
 
@@ -63,8 +64,8 @@ osThreadId defaultTaskHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SAI1_Init(void);
 void StartDefaultTask(void const * argument);
@@ -108,13 +109,14 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  MX_DMA_Init();
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART3_UART_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_SAI1_Init();
   /* USER CODE BEGIN 2 */
@@ -406,7 +408,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(USB_PowerSwitchOn_GPIO_Port, USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ST0E0_GPIO_Port, ST0E0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(ST0_GPIO_Port, ST0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : USER_Btn_Pin */
   GPIO_InitStruct.Pin = USER_Btn_Pin;
@@ -448,12 +450,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_VBUS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ST0E0_Pin */
-  GPIO_InitStruct.Pin = ST0E0_Pin;
+  /*Configure GPIO pin : ST0_Pin */
+  GPIO_InitStruct.Pin = ST0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(ST0E0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(ST0_GPIO_Port, &GPIO_InitStruct);
 
 }
 
@@ -470,11 +472,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void const * argument)
 {
-    
-    
-    
-
   /* USER CODE BEGIN 5 */
+  InitPlatform();
+  ExecPlatform();
   /* Infinite loop */
   for(;;)
   {
@@ -529,6 +529,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    CustomAssertFailed(file, line);
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

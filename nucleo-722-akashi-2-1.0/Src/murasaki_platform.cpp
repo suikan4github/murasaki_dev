@@ -12,22 +12,21 @@
 
 // Include the murasaki class library.
 #include "murasaki.hpp"
-#include "murasaki_syslog.hpp"
 
 // Include the prototype  of functions of this file.
-#include <math.h>
 
+/* -------------------- PLATFORM Macros -------------------------- */
+#define CHANNEL_LEN 128
 /* -------------------- PLATFORM Type and classes -------------------------- */
-#define CHANNEL_LEN 48
 
-/* -------------------- PLATFORM VARIABLES-------------------------- */
+/* -------------------- PLATFORM Variables-------------------------- */
 
 // Essential definition.
 // Do not delete
 murasaki::Platform murasaki::platform;
-murasaki::Debugger *murasaki::debugger;
+murasaki::Debugger * murasaki::debugger;
 
-/* ------------------------ PERIPHERAL ----------------------------- */
+/* ------------------------ STM32 Peripherals ----------------------------- */
 
 /*
  * Platform dependent peripheral declaration.
@@ -39,20 +38,17 @@ murasaki::Debugger *murasaki::debugger;
  * The declaration here is user project dependent.
  */
 // Following block is just sample.
-#if 0
-extern I2C_HandleTypeDef hi2c2;
-extern SPI_HandleTypeDef hspi1;
-extern SPI_HandleTypeDef hspi4;
-extern UART_HandleTypeDef huart2;
-#endif
-extern UART_HandleTypeDef huart3;
 extern I2C_HandleTypeDef hi2c1;
 extern SAI_HandleTypeDef hsai_BlockA1;
 extern SAI_HandleTypeDef hsai_BlockB1;
-/* -------------------- PLATFORM ALGORITHM ------------------------- */
+extern UART_HandleTypeDef huart3;
 
-void TaskBodyFunction(const void *ptr);
-void I2cSearch(murasaki::I2CMasterStrategy *master);
+/* -------------------- PLATFORM Prototypes ------------------------- */
+
+void TaskBodyFunction(const void* ptr);
+void I2cSearch(murasaki::I2CMasterStrategy * master);
+
+/* -------------------- PLATFORM Implementation ------------------------- */
 
 void InitPlatform()
 {
@@ -78,28 +74,28 @@ void InitPlatform()
     murasaki::debugger->AutoRePrint();  // type any key to show history.
 
     // Setup I2C.
-    murasaki::platform.i2cMaster = new murasaki::I2cMaster(&hi2c1);
-    MURASAKI_ASSERT(nullptr != murasaki::platform.i2cMaster)
+    murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.i2c_master)
 
     // audio CODEC
     murasaki::platform.codec = new murasaki::Adau1361(
                                                       48000,
                                                       12000000,
-                                                      murasaki::platform.i2cMaster,
+                                                      murasaki::platform.i2c_master,
                                                       0x38);
 
-    murasaki::platform.audioAdapter = new murasaki::SaiAudioAdaptor(
+    murasaki::platform.audio_adapter = new murasaki::SaiAudioAdaptor(
                                                                     &hsai_BlockB1,
                                                                     &hsai_BlockA1);
     murasaki::platform.audio = new murasaki::DuplexAudio(
-                                                         murasaki::platform.audioAdapter,
+                                                         murasaki::platform.audio_adapter,
                                                          CHANNEL_LEN);
 
     // Status LED
-    murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
-    MURASAKI_ASSERT(nullptr != murasaki::platform.st0)
-    murasaki::platform.st1 = new murasaki::BitOut(ST1_GPIO_Port, ST1_Pin);
-    MURASAKI_ASSERT(nullptr != murasaki::platform.st1)
+    murasaki::platform.led_st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led_st0)
+    murasaki::platform.led_st1 = new murasaki::BitOut(ST1_GPIO_Port, ST1_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led_st1)
 
     // For demonstration, one GPIO LED port is reserved.
     // The port and pin names are fined by CubeIDE.
@@ -107,21 +103,21 @@ void InitPlatform()
     MURASAKI_ASSERT(nullptr != murasaki::platform.led)
 
     // For demonstration of FreeRTOS task.
-    murasaki::platform.task1 = new murasaki::SimpleTask(
+    murasaki::platform.audio_task = new murasaki::SimpleTask(
                                                         "task1",
                                                         2048, /* Stack size*/
                                                         murasaki::ktpRealtime,
                                                         nullptr, /* Stack must be allocated by system */
                                                         &TaskBodyFunction
                                                         );
-    MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
+    MURASAKI_ASSERT(nullptr != murasaki::platform.audio_task)
 
     // Following block is just for sample.
 #if 0
     // For demonstration of the serial communication.
     murasaki::platform.uart = new murasaki::Uart(&huart2);
     // For demonstration of master and slave I2C
-    murasaki::platform.i2cMaster = new murasaki::I2cMaster(&hi2c1);
+    murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
     murasaki::platform.i2cSlave = new murasaki::I2cSlave(&hi2c2);
     // For demonstration of master and slave SPI
     murasaki::platform.spiMaster = new murasaki::SpiMaster(&hspi1);
@@ -134,21 +130,19 @@ void InitPlatform()
 
 void ExecPlatform()
 {
-    murasaki::platform.st0->Clear();
-    murasaki::platform.st1->Set();
+    murasaki::platform.led_st0->Clear();
+    murasaki::platform.led_st1->Set();
 
-    I2cSearch(murasaki::platform.i2cMaster);
+    I2cSearch(murasaki::platform.i2c_master);
 
-    murasaki::platform.task1->Start();
+    murasaki::platform.audio_task->Start();
 
     while (true)  // dummy loop
     {
-        murasaki::platform.led->Toggle();  // toggling LED
         murasaki::Sleep(static_cast<murasaki::WaitMilliSeconds>(700));
 
     }
 }
-
 /* ------------------------- UART ---------------------------------- */
 
 /**
@@ -166,7 +160,7 @@ void ExecPlatform()
  * In this call back, the uart device handle have to be passed to the
  * murasaki::Uart::TransmissionCompleteCallback() function.
  */
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef * huart)
                              {
     // Poll all uart tx related interrupt receivers.
     // If hit, return. If not hit,check next.
@@ -190,7 +184,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
  * In this call back, the uart device handle have to be passed to the
  * murasaki::Uart::ReceiveCompleteCallback() function.
  */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef * huart)
                              {
     // Poll all uart rx related interrupt receivers.
     // If hit, return. If not hit,check next.
@@ -295,12 +289,12 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef * hspi) {
  * In this call back, the uart device handle have to be passed to the
  * murasaki::I2c::TransmitCompleteCallback() function.
  */
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
                                   {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 1
-    if (murasaki::platform.i2cMaster->TransmitCompleteCallback(hi2c))
+    if (murasaki::platform.i2c_master->TransmitCompleteCallback(hi2c))
         return;
 #endif
 }
@@ -319,12 +313,12 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
  * In this call back, the uart device handle have to be passed to the
  * murasaki::Uart::ReceiveCompleteCallback() function.
  */
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master rx related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 1
-    if (murasaki::platform.i2cMaster->ReceiveCompleteCallback(hi2c))
-        return;
+    if (murasaki::platform.i2c_master->ReceiveCompleteCallback(hi2c))
+    return;
 #endif
 }
 /**
@@ -342,7 +336,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
  * In this call back, the I2C slave device handle have to be passed to the
  * murasaki::I2cSlave::TransmitCompleteCallback() function.
  */
-void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
+void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef * hi2c)
                                  {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
@@ -366,7 +360,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
  * In this call back, the I2C slave device handle have to be passed to the
  * murasaki::I2cSlave::ReceiveCompleteCallback() function.
  */
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master rx related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 0
@@ -390,13 +384,65 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c) {
  * In this call back, the uart device handle have to be passed to the
  * murasaki::I2c::HandleError() function.
  */
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master error related interrupt receivers.
     // If hit, return. If not hit,check next.
 #if 1
-    if (murasaki::platform.i2cMaster->HandleError(hi2c))
-        return;
+    if (murasaki::platform.i2c_master->HandleError(hi2c))
+    return;
 #endif
+}
+
+#endif
+
+/* ------------------ SAI  -------------------------- */
+#ifdef HAL_SAI_MODULE_ENABLED
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer halfway.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
+ */
+void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
+        murasaki::platform.led_st0->Toggle();
+        return;
+
+    }
+}
+
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer complete.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
+ */
+void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
+    	murasaki::platform.led_st1->Toggle();
+        return;
+    }
+}
+
+/**
+ * @brief Optional SAI error interrupt handler.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
+ * Note that DuplexAudio::HandleError() trigger a hard fault.
+ * So, never return.
+ */
+
+void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
+    if (murasaki::platform.audio->HandleError(hsai))
+        return;
 }
 
 #endif
@@ -437,62 +483,27 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 #endif
 }
 
-/* ------------------ SAI  -------------------------- */
-#ifdef HAL_SAI_MODULE_ENABLED
-/**
- * @brief Optional SAI interrupt handler at buffer transfer halfway.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
- */
-void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
-        murasaki::platform.st0->Set();
-        murasaki::platform.st1->Clear();
-        return;
-    }
-}
-
-/**
- * @brief Optional SAI interrupt handler at buffer transfer complete.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
- */
-void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
-        murasaki::platform.st0->Clear();
-        murasaki::platform.st1->Set();
-        return;
-    }
-}
-
-/**
- * @brief Optional SAI error interrupt handler.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
- * Note that DuplexAudio::HandleError() trigger a hard fault.
- * So, never return.
- */
-
-void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->HandleError(hsai))
-        return;
-}
-
-#endif
-
 /* ------------------ ASSERTION AND ERROR -------------------------- */
 
-void CustomAssertFailed(uint8_t *file, uint32_t line)
+/**
+ * @brief Hook for the assert_failure() in main.c
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param file Name of the source file where assertion happen
+ * @param line Number of the line where assertion happen
+ * @details
+ * This routine provides a custom hook for the assertion inside STM32Cube HAL.
+ * All assertion raised in HAL will be redirected here.
+ *
+ * @code
+ * void assert_failed(uint8_t* file, uint32_t line)
+ * {
+ *     CustomAssertFailed(file, line);
+ * }
+ * @endcode
+ * By default, this routine output a message with location informaiton
+ * to the debugger console.
+ */
+void CustomAssertFailed(uint8_t* file, uint32_t line)
                         {
     murasaki::debugger->Printf("Wrong parameters value: file %s on line %d\n",
                                file,
@@ -501,28 +512,101 @@ void CustomAssertFailed(uint8_t *file, uint32_t line)
     MURASAKI_ASSERT(false);
 }
 
-void CustomDefaultHandler() {
-    // Call debugger's post mortem processing. Never return again.
+/*
+ * CustmDefaultHanlder :
+ *
+ * An entry of the exception. Especialy for the Hard Fault exception.
+ * In this function, the Stack pointer just before exception is retrieved
+ * and pass as the first parameter of the PrintFaultResult().
+ *
+ * Note : To print the correct information, this function have to be
+ * Jumped in from the exception entry without any data push to the stack.
+ * To avoid the pushing extra data to stack or making stack frame,
+ * Compile the program without debug information and with certain
+ * optimization leve, when you investigate the Hard Fault.
+ */
+__asm volatile (
+        ".global CustomDefaultHandler \n"
+        "CustomDefaultHandler: \n"
+        " movs r0,#4       \n"
+        " movs r1, lr      \n"
+        " tst r0, r1       \n"
+        " beq _MSP         \n"
+        " mrs r0, psp      \n"
+        " b _HALT          \n"
+        "_MSP:               \n"
+        " mrs r0, msp      \n"
+        "_HALT:              \n"
+        " ldr r1,[r0,#20]  \n"
+        " b PrintFaultResult \n"
+        " bkpt #0          \n"
+);
+
+/**
+ * @brief Printing out the context information.
+ * @param stack_pointer retrieved stack pointer before interrupt / exception.
+ * @details
+ * Do not call from application. This is murasaki_internal_only.
+ *
+ */
+void PrintFaultResult(unsigned int * stack_pointer) {
+
+    murasaki::debugger->Printf("\nSpurious exception or hardfault occured.  \n");
+    murasaki::debugger->Printf("Stacked R0  : 0x%08X \n", stack_pointer[0]);
+    murasaki::debugger->Printf("Stacked R1  : 0x%08X \n", stack_pointer[1]);
+    murasaki::debugger->Printf("Stacked R2  : 0x%08X \n", stack_pointer[2]);
+    murasaki::debugger->Printf("Stacked R3  : 0x%08X \n", stack_pointer[3]);
+    murasaki::debugger->Printf("Stacked R12 : 0x%08X \n", stack_pointer[4]);
+    murasaki::debugger->Printf("Stacked LR  : 0x%08X \n", stack_pointer[5]);
+    murasaki::debugger->Printf("Stacked PC  : 0x%08X \n", stack_pointer[6]);
+    murasaki::debugger->Printf("Stacked PSR : 0x%08X \n", stack_pointer[7]);
+
+    murasaki::debugger->Printf("       CFSR : 0x%08X \n", *(unsigned int *) 0xE000ED28);
+    murasaki::debugger->Printf("       HFSR : 0x%08X \n", *(unsigned int *) 0xE000ED2C);
+    murasaki::debugger->Printf("       DFSR : 0x%08X \n", *(unsigned int *) 0xE000ED30);
+    murasaki::debugger->Printf("       AFSR : 0x%08X \n", *(unsigned int *) 0xE000ED3C);
+
+    murasaki::debugger->Printf("       MMAR : 0x%08X \n", *(unsigned int *) 0xE000ED34);
+    murasaki::debugger->Printf("       BFAR : 0x%08X \n", *(unsigned int *) 0xE000ED38);
+
+    murasaki::debugger->Printf("(Note : To avoid the stacking by C compiler, use release build to investigate the fault. ) \n");
+
     murasaki::debugger->DoPostMortem();
 }
 
+/**
+ * @brief StackOverflow hook for FreeRTOS
+ * @param xTask Task ID which causes stack overflow.
+ * @param pcTaskName Name of the task which cuases stack overflow.
+ * @fn vApplicationStackOverflowHook
+ * @details
+ * This function will be called from FreeRTOS when some task causes overflow.
+ * See TaskStrategy::getStackMinHeadroom() for details.
+ */
 void vApplicationStackOverflowHook(TaskHandle_t xTask,
                                    signed char *pcTaskName) {
-    murasaki::debugger->Printf("Stack overflow at task :  %s \n", pcTaskName);
+    murasaki::debugger->Printf("Stack overflow at task : %s \n", pcTaskName);
     MURASAKI_ASSERT(false);
 }
 
-/* ------------------ User Function -------------------------- */
-// Task body of the murasaki::platform.task1
-void TaskBodyFunction(const void *ptr) {
+/* ------------------ User Functions -------------------------- */
+/**
+ * @brief Demonstration task.
+ * @param ptr Pointer to the parameter block
+ * @details
+ * Task body function as demonstration of the @ref murasaki::SimpleTask.
+ *
+ * You can delete this function if you don't use.
+ */
+void TaskBodyFunction(const void* ptr) {
     // phase of the oscillator.
     // Let's make phase [0,36000) representing [0,360).
 
     // audio buffer
-    float *l_tx = new float[CHANNEL_LEN];
-    float *r_tx = new float[CHANNEL_LEN];
-    float *l_rx = new float[CHANNEL_LEN];
-    float *r_rx = new float[CHANNEL_LEN];
+    float * l_tx = new float[CHANNEL_LEN];
+    float * r_tx = new float[CHANNEL_LEN];
+    float * l_rx = new float[CHANNEL_LEN];
+    float * r_rx = new float[CHANNEL_LEN];
 
     murasaki::platform.codec->Start();
 
@@ -557,11 +641,21 @@ void TaskBodyFunction(const void *ptr) {
 
 }
 
-void I2cSearch(murasaki::I2CMasterStrategy *master)
+/**
+ * @brief I2C device serach function
+ * @param master Pointer to the I2C master controller object.
+ * @details
+ * Poll all device address and check the response. If no response(NAK),
+ * there is no device.
+ *
+ * This function can be deleted if you don't use.
+ */
+#if 1
+void I2cSearch(murasaki::I2CMasterStrategy * master)
                {
     uint8_t tx_buf[1];
 
-    murasaki::debugger->Printf("            Probing I2C devices \n");
+    murasaki::debugger->Printf("\n            Probing I2C devices \n");
     murasaki::debugger->Printf("   | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
     murasaki::debugger->Printf("---+------------------------------------------------\n");
 
@@ -574,7 +668,7 @@ void I2cSearch(murasaki::I2CMasterStrategy *master)
             // check whether device exist or not.
             result = master->Transmit(raw + col, tx_buf, 0);
             if (result == murasaki::ki2csOK)  // device acknowledged.
-                murasaki::debugger->Printf(" %2X", raw + col);
+                murasaki::debugger->Printf(" %2X", raw + col); // print address
             else if (result == murasaki::ki2csNak)  // no device
                 murasaki::debugger->Printf(" --");
             else
@@ -584,3 +678,4 @@ void I2cSearch(murasaki::I2CMasterStrategy *master)
     }
 
 }
+#endif
