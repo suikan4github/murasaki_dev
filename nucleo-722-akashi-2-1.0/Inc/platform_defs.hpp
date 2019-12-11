@@ -45,7 +45,7 @@ struct Platform
     I2CMasterStrategy * i2c_master;  ///< I2C Master under test
 
     AudioCodecStrategy * codec;
-    AudioAdapterStrategy * audio_adapter;
+    AudioPortAdapterStrategy * audio_adapter;
     DuplexAudio * audio;
 
 

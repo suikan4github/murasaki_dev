@@ -84,7 +84,7 @@ void InitPlatform()
                                                       murasaki::platform.i2c_master,
                                                       0x38);
 
-    murasaki::platform.audio_adapter = new murasaki::SaiAudioAdaptor(
+    murasaki::platform.audio_adapter = new murasaki::SaiPortAdaptor(
                                                                     &hsai_BlockB1,
                                                                     &hsai_BlockA1);
     murasaki::platform.audio = new murasaki::DuplexAudio(
