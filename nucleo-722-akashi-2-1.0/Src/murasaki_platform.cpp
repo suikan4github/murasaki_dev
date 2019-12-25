@@ -16,7 +16,7 @@
 // Include the prototype  of functions of this file.
 
 /* -------------------- PLATFORM Macros -------------------------- */
-#define CHANNEL_LEN 128
+#define AUDIO_CHANNEL_LEN 128
 /* -------------------- PLATFORM Type and classes -------------------------- */
 
 /* -------------------- PLATFORM Variables-------------------------- */
@@ -89,7 +89,7 @@ void InitPlatform()
                                                                     &hsai_BlockA1);
     murasaki::platform.audio = new murasaki::DuplexAudio(
                                                          murasaki::platform.audio_adapter,
-                                                         CHANNEL_LEN);
+                                                         AUDIO_CHANNEL_LEN);
 
     // Status LED
     murasaki::platform.led_st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
@@ -598,44 +598,47 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
  *
  * You can delete this function if you don't use.
  */
-void TaskBodyFunction(const void* ptr) {
+void TaskBodyFunction(const void *ptr) {
     // phase of the oscillator.
     // Let's make phase [0,36000) representing [0,360).
 
-    // audio buffer
-    float * l_tx = new float[CHANNEL_LEN];
-    float * r_tx = new float[CHANNEL_LEN];
-    float * l_rx = new float[CHANNEL_LEN];
-    float * r_rx = new float[CHANNEL_LEN];
+    // audio buffer for left and right, tx and rx.
+    float *l_tx = new float[AUDIO_CHANNEL_LEN];
+    float *r_tx = new float[AUDIO_CHANNEL_LEN];
+    float *l_rx = new float[AUDIO_CHANNEL_LEN];
+    float *r_rx = new float[AUDIO_CHANNEL_LEN];
 
     murasaki::platform.codec->Start();
 
     murasaki::SetSyslogFacilityMask(murasaki::kfaAudioCodec);
     murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
 
-    int count = 0;
-    murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
-
-    murasaki::platform.codec->SetHpOutputGain(0.0, 0.0);  // right gain in dB, left gain in dB
-    murasaki::platform.codec->SetLineInputGain(0.0, 0.0);  // right gain in dB, left gain in dB
-    murasaki::platform.codec->SetLineOutputGain(0.0, 0.0);
+    murasaki::platform.codec->SetGain(
+                                      murasaki::kccLineInput,
+                                      0.0,
+                                      0.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetGain(
+                                      murasaki::kccHeadphoneOutput,
+                                      0.0,
+                                      0.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->Mute(murasaki::kccLineInput, false);
+    murasaki::platform.codec->Mute(murasaki::kccHeadphoneOutput, false);
 
     // Loop forever
     while (true) {
 
-        if (count > 10) {
-            // disable debug message printing
-            murasaki::SetSyslogSererityThreshold(murasaki::kseError);
-        }
-        else
-            count++;
-
-        // Talk through
-        for (int i = 0; i < CHANNEL_LEN; i++) {
+        // Talk through : copy received data to transmit.
+        for (int i = 0; i < AUDIO_CHANNEL_LEN; i++) {
             l_tx[i] = l_rx[i];
             r_tx[i] = r_rx[i];
         }
-        murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
+
+        // Wait last TX/RX. Then, copy TX data to DMA TX buffer and copy DMA RX buffer to RX data.
+        murasaki::platform.audio->TransmitAndReceive(
+                                                     l_tx,
+                                                     r_tx,
+                                                     l_rx,
+                                                     r_rx);
 
     }
 
