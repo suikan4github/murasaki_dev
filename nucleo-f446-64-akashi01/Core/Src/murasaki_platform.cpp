@@ -38,18 +38,16 @@ murasaki::Debugger * murasaki::debugger;
  * The declaration here is user project dependent.
  */
 // Following block is just sample.
-#if 0
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
-extern SPI_HandleTypeDef hspi4;
+extern SPI_HandleTypeDef hspi2;
+extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
-#endif
-extern UART_HandleTypeDef huart3;
 
 /* -------------------- PLATFORM Prototypes ------------------------- */
+void I2cSearch(murasaki::I2CMasterStrategy *master);
 
-void TaskBodyFunction(const void* ptr);
 
 /* -------------------- PLATFORM Implementation ------------------------- */
 
@@ -62,7 +60,7 @@ void InitPlatform()
     // UART device setting for console interface.
     // On Nucleo, the port connected to the USB port of ST-Link is
     // referred here.
-    murasaki::platform.uart_console = new murasaki::DebuggerUart(&huart3);
+    murasaki::platform.uart_console = new murasaki::DebuggerUart(&huart2);
     while (nullptr == murasaki::platform.uart_console)
         ;  // stop here on the memory allocation failure.
 
@@ -82,30 +80,67 @@ void InitPlatform()
 
     // For demonstration, one GPIO LED port is reserved.
     // The port and pin names are fined by CubeIDE.
-    murasaki::platform.led = new murasaki::BitOut(LD2_GPIO_Port, LD2_Pin);
-    MURASAKI_ASSERT(nullptr != murasaki::platform.led)
+    murasaki::platform.led1 = new murasaki::BitOut(LED1_GPIO_Port, LED1_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led1)
+    murasaki::platform.led2 = new murasaki::BitOut(LED2_GPIO_Port, LED2_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led2)
+    murasaki::platform.led3 = new murasaki::BitOut(LED3_GPIO_Port, LED3_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led3)
+    murasaki::platform.led4 = new murasaki::BitOut(LED4_GPIO_Port, LED4_Pin);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.led4)
 
     // For demonstration of FreeRTOS task.
-    murasaki::platform.task1 = new murasaki::SimpleTask(
-                                                        "task1",
+    murasaki::platform.master_task = new murasaki::SimpleTask(
+                                                        "MasterTask",
                                                         256,
                                                         murasaki::ktpNormal,
                                                         nullptr,
-                                                        &TaskBodyFunction
+                                                        &MasterTaskBodyFunction
                                                         );
-    MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
+    MURASAKI_ASSERT(nullptr != murasaki::platform.master_task)
+
+    murasaki::platform.slave_task = new murasaki::SimpleTask(
+                                                        "SlaveTask",
+                                                        256,
+                                                             murasaki::ktpHigh, /* slave has higher priority.*/
+                                                        nullptr,
+                                                        &SlaveTaskBodyFunction
+                                                        );
+
+    MURASAKI_ASSERT(nullptr != murasaki::platform.slave_task)
+
+    murasaki::platform.sync_command = new murasaki::Synchronizer();
+    MURASAKI_ASSERT(nullptr != murasaki::platform.sync_command)
+
+    murasaki::platform.sync_ack = new murasaki::Synchronizer();
+    MURASAKI_ASSERT(nullptr != murasaki::platform.sync_ack)
+
+
+    murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.i2c_master)
+
+    murasaki::platform.i2c_slave = new murasaki::I2cSlave(&hi2c2);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.i2c_slave)
+
+    murasaki::platform.spi_master = new murasaki::SpiMaster(&hspi2);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.spi_master)
+
+    murasaki::platform.spi_slave = new murasaki::SpiSlave(&hspi1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.spi_slave)
+
+    // CPOL and CPHA follows pin configration of SPI 1.
+    murasaki::platform.slave_adapter = new murasaki::SpiSlaveAdapter(
+                                                                     0,
+                                                                     0,
+                                                                     SPI_CS_GPIO_Port,
+                                                                     SPI_CS_Pin);
+
+    murasaki::platform.uart = new murasaki::Uart(&huart1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.uart)
+
 
     // Following block is just for sample.
-#if 0
-    // For demonstration of the serial communication.
-    murasaki::platform.uart = new murasaki::Uart(&huart2);
-    // For demonstration of master and slave I2C
-    murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
-    murasaki::platform.i2c_slave = new murasaki::I2cSlave(&hi2c2);
-    // For demonstration of master and slave SPI
-    murasaki::platform.spi_master = new murasaki::SpiMaster(&hspi1);
-    murasaki::platform.spi_slave = new murasaki::SpiSlave(&hspi4);
-#endif
+
 
 }
 
@@ -114,83 +149,21 @@ void ExecPlatform()
     // counter for the demonstration.
     int count = 0;
 
-    // Following blocks are sample.
-#if 0
-    {
-        uint8_t data[5] = { 1, 2, 3, 4, 5 };
-        murasaki::UartStatus stat;
+    I2cSearch(murasaki::platform.i2c_master);
 
-        stat = murasaki::platform.uart->Transmit(
-                                                 data,
-                                                 5);
 
-    }
-
-    {
-        uint8_t data[5] = { 1, 2, 3, 4, 5 };
-        murasaki::I2cStatus stat;
-
-        stat = murasaki::platform.i2c_master->Transmit(
-                                                      127,
-                                                      data,
-                                                      5);
-    }
-
-    {
-        uint8_t data[5];
-        murasaki::I2cStatus stat;
-
-        stat = murasaki::platform.i2c_slave->Receive(
-                                                    data,
-                                                    5);
-
-    }
-
-    {
-        // Create a slave adapter. This object specify the protocol and slave select pin
-        murasaki::SpiSlaveAdapterStrategy * slave_spec;
-        slave_spec = new murasaki::SpiSlaveAdapter(
-                                                   murasaki::kspoFallThenRise,
-                                                   murasaki::ksphLatchThenShift,
-                                                   SPI_SLAVE_SEL_GPIO_Port,
-                                                   SPI_SLAVE_SEL_Pin
-                                                   );
-
-        // Transmit and receive data through SPI
-        uint8_t tx_data[5] = { 1, 2, 3, 4, 5 };
-        uint8_t rx_data[5];
-        murasaki::SpiStatus stat;
-        stat = murasaki::platform.spi_master->TransmitAndReceive(
-                                                                slave_spec,
-                                                                tx_data,
-                                                                rx_data,
-                                                                5);
-    }
-
-    {
-        // Transmit and receive data through SPI
-        uint8_t tx_data[5] = { 1, 2, 3, 4, 5 };
-        uint8_t rx_data[5];
-        murasaki::SpiStatus stat;
-        stat = murasaki::platform.spi_slave->TransmitAndReceive(
-                                                               tx_data,
-                                                               rx_data,
-                                                               5);
-    }
-#endif
-    murasaki::platform.task1->Start();
+    murasaki::platform.master_task->Start();
+    murasaki::platform.slave_task->Start();
 
     // Loop forever
     while (true) {
 
-        // print a message with counter value to the console.
-        murasaki::debugger->Printf("Hello %d \n", count);
 
         // update the counter value.
         count++;
 
-        // wait for a while
-        murasaki::Sleep(500);
+        murasaki::platform.led4->Toggle();  // toggling LED
+        murasaki::Sleep(700);
     }
 }
 
@@ -217,6 +190,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef * huart)
     // If hit, return. If not hit,check next.
     if (murasaki::platform.uart_console->TransmitCompleteCallback(huart))
         return;
+    if (murasaki::platform.uart->TransmitCompleteCallback(huart))
+        return;
 
 }
 
@@ -241,6 +216,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef * huart)
     // If hit, return. If not hit,check next.
     if (murasaki::platform.uart_console->ReceiveCompleteCallback(huart))
         return;
+    if (murasaki::platform.uart->ReceiveCompleteCallback(huart))
+        return;
 
 }
 
@@ -263,6 +240,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     // Poll all uart error related interrupt receivers.
     // If hit, return. If not hit,check next.
     if (murasaki::platform.uart_console->HandleError(huart))
+        return;
+    if (murasaki::platform.uart->HandleError(huart))
         return;
 
 }
@@ -289,9 +268,11 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
     // Poll all SPI TX RX related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
-     if ( murasaki::platform.spi1->TransmitAndReceiveCompleteCallback(hspi) )
-     return;
+#if 1
+    if (murasaki::platform.spi_master->TransmitAndReceiveCompleteCallback(hspi))
+        return;
+    if (murasaki::platform.spi_slave->TransmitAndReceiveCompleteCallback(hspi))
+        return;
 #endif
 }
 
@@ -313,9 +294,11 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef * hspi) {
     // Poll all SPI error interrupt related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
-     if ( murasaki::platform.spi1->HandleError(hspi) )
-     return;
+#if 1
+    if (murasaki::platform.spi_master->HandleError(hspi))
+        return;
+    if (murasaki::platform.spi_slave->HandleError(hspi))
+        return;
 #endif
 }
 
@@ -344,7 +327,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
                                   {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
+#if 1
     if (murasaki::platform.i2c_master->TransmitCompleteCallback(hi2c))
         return;
 #endif
@@ -367,7 +350,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef * hi2c)
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master rx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
+#if 1
     if (murasaki::platform.i2c_master->ReceiveCompleteCallback(hi2c))
     return;
 #endif
@@ -391,7 +374,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef * hi2c)
                                  {
     // Poll all I2C master tx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
+#if 1
     if (murasaki::platform.i2c_slave->TransmitCompleteCallback(hi2c))
     return;
 #endif
@@ -414,7 +397,7 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef * hi2c)
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master rx related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
+#if 1
     if (murasaki::platform.i2c_slave->ReceiveCompleteCallback(hi2c))
     return;
 #endif
@@ -438,9 +421,11 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef * hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef * hi2c) {
     // Poll all I2C master error related interrupt receivers.
     // If hit, return. If not hit,check next.
-#if 0
+#if 1
     if (murasaki::platform.i2c_master->HandleError(hi2c))
-    return;
+        return;
+    if (murasaki::platform.i2c_slave->HandleError(hi2c))
+        return;
 #endif
 }
 
@@ -637,24 +622,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
     MURASAKI_ASSERT(false);
 }
 
-/* ------------------ User Functions -------------------------- */
-/**
- * @brief Demonstration task.
- * @param ptr Pointer to the parameter block
- * @details
- * Task body function as demonstration of the @ref murasaki::SimpleTask.
- *
- * You can delete this function if you don't use.
- */
-void TaskBodyFunction(const void* ptr)
-                      {
 
-    while (true)  // dummy loop
-    {
-        murasaki::platform.led->Toggle();  // toggling LED
-        murasaki::Sleep(700);
-    }
-}
 
 /**
  * @brief I2C device serach function
@@ -665,7 +633,7 @@ void TaskBodyFunction(const void* ptr)
  *
  * This function can be deleted if you don't use.
  */
-#if 0
+#if 1
 void I2cSearch(murasaki::I2CMasterStrategy * master)
                {
     uint8_t tx_buf[1];

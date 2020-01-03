@@ -135,6 +135,9 @@ void PrintFaultResult(unsigned int * stack_pointer);
  * we don't have prototype in the murasaki_platform.hpp.
  */
 
+void MasterTaskBodyFunction( const void * ptr );
+void SlaveTaskBodyFunction( const void * ptr );
+
 #ifdef __cplusplus
 }
 #endif

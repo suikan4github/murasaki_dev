@@ -37,18 +37,29 @@ struct Platform
     UartStrategy * uart_console;    ///< UART wrapping class object for debugging
     LoggerStrategy * logger;        ///< logging class object for debugger
 
-    BitOutStrategy * led;           ///< GP out under test
-    TaskStrategy * task1;           ///< Task under test
+    BitOutStrategy * led1;           ///< GP out under test
+    BitOutStrategy * led2;           ///< GP out under test
+    BitOutStrategy * led3;           ///< GP out under test
+    BitOutStrategy * led4;           ///< GP out under test
+    TaskStrategy * master_task;           ///< Task under test
+    TaskStrategy * slave_task;           ///< Task under test
 
+    Synchronizer * sync_command;
+    Synchronizer * sync_ack;
     // Following block is just sample
 
-#if 0
-    UartStrategy * uart;            ///< UART under test
-    SpiMasterStrategy * spi_master;  ///< SPI Master under test
-    SpiSlaveStrategy * spi_slave;    ///< SPI Slave under test
     I2CMasterStrategy * i2c_master;  ///< I2C Master under test
     I2cSlaveStrategy * i2c_slave;    ///< I2C Slave under test
-#endif
+
+    UartStrategy *uart;            ///< UART under test
+
+    SpiMasterStrategy *spi_master;  ///< SPI Master under test
+    SpiSlaveStrategy *spi_slave;    ///< SPI Slave under test
+    SpiSlaveAdapterStrategy *slave_adapter;
+
+
+    int test_state=0;
+    bool test_success = false;
 
 };
 
