@@ -20,12 +20,12 @@ static const int cmd_201 = 201;
 
 /* ------------------ User Functions -------------------------- */
 /**
- * @brief Demonstration task.
+ * @brief Master test task.
  * @param ptr Pointer to the parameter block
  * @details
- * Task body function as demonstration of the @ref murasaki::SimpleTask.
+ * Task body function of the test.
+ * Call test subprogram step by step.
  *
- * You can delete this function if you don't use.
  */
 void MasterTaskBodyFunction(const void *ptr) {
 
@@ -35,6 +35,13 @@ void MasterTaskBodyFunction(const void *ptr) {
     Test101Master();
     Test201Master();
 
+#if 1
+    // Display text on the LED module.
+    murasaki::platform.i2c_master->Transmit(
+                                            0x71,
+                                            reinterpret_cast<const uint8_t*>("End."),
+                                            4);
+#endif
     // end of test. blink LED1
     while (true)
     {
@@ -97,7 +104,7 @@ static uint8_t rx_data_spi_slave[30] = "*********************";
 
 
 void Test201Master(void) {
-    // Start I2C simple test.
+    // Start SPI simple test.
     murasaki::platform.test_state = cmd_201;
     murasaki::platform.test_success = false;
 
@@ -146,7 +153,7 @@ static uint8_t tx_data_uart[] = "Hello, UART";
 static uint8_t rx_data_uart[30] = "*********************";
 
 void Test101Master(void) {
-    // Start I2C simple test.
+    // Start UART simple test.
     murasaki::platform.test_state = cmd_101;
     murasaki::platform.test_success = false;
 
