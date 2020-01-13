@@ -88,7 +88,7 @@ void InitPlatform()
                                                       murasaki::platform.i2cMaster,
                                                       0x38);
 
-    murasaki::platform.audioAdapter = new murasaki::SaiAudioAdaptor(
+    murasaki::platform.audioAdapter = new murasaki::SaiPortAdaptor(
                                                                     &hsai_BlockB1,
                                                                     &hsai_BlockA1);
     murasaki::platform.audio = new murasaki::DuplexAudio(
@@ -532,9 +532,31 @@ void TaskBodyFunction(const void *ptr) {
     int count = 0;
     murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
-    murasaki::platform.codec->SetHpOutputGain(0.0, 0.0);  // right gain in dB, left gain in dB
-    murasaki::platform.codec->SetLineInputGain(0.0, 0.0);  // right gain in dB, left gain in dB
-    murasaki::platform.codec->SetLineOutputGain(0.0, 0.0);
+    murasaki::platform.codec->SetGain(
+                                      murasaki::kccHeadphoneOutput,
+                                      0.0,
+                                      0.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetGain(
+                                      murasaki::kccLineInput,
+                                      0.0,
+                                      0.0);  // right gain in dB, left gain in dB
+    murasaki::platform.codec->SetGain(
+                                      murasaki::kccLineOutput,
+                                      0.0,
+                                      0.0);
+
+    murasaki::platform.codec->Mute(
+                                   murasaki::kccHeadphoneOutput,
+                                   false
+                                   );
+    murasaki::platform.codec->Mute(
+                                   murasaki::kccLineInput,
+                                   false
+                                   );
+    murasaki::platform.codec->Mute(
+                                   murasaki::kccLineOutput,
+                                   false
+                                   );
 
     // Loop forever
     while (true) {
