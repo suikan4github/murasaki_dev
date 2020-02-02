@@ -523,7 +523,7 @@ void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
  */
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
     if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
-#if 0
+#if 1
         murasaki::platform.st0->Set();
         murasaki::platform.st1->Clear();
 #endif
@@ -543,7 +543,7 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
  */
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hsai) {
     if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
-#if 0
+#if 1
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
 #endif
