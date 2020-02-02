@@ -23,6 +23,8 @@
 // Define following macro as true to disable the assertion inside murasaki class library.
 #define MURASAKI_CONFIG_NODEBUG false
 
+#define PLATFORM_CONFIG_DEBUG_BUFFER_SIZE 8192
+
 // Define following macro as true to disable the Syslog inside murasaki class library
 #define MURASAKI_CONFIG_NOSYSLOG false
 

@@ -46,10 +46,10 @@
 
 I2C_HandleTypeDef hi2c1;
 
-SAI_HandleTypeDef hsai_BlockA1;
-SAI_HandleTypeDef hsai_BlockB1;
-DMA_HandleTypeDef hdma_sai1_a;
-DMA_HandleTypeDef hdma_sai1_b;
+I2S_HandleTypeDef hi2s1;
+I2S_HandleTypeDef hi2s2;
+DMA_HandleTypeDef hdma_spi1_tx;
+DMA_HandleTypeDef hdma_spi2_rx;
 
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
@@ -66,7 +66,8 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_SAI1_Init(void);
+static void MX_I2S1_Init(void);
+static void MX_I2S2_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -116,7 +117,8 @@ int main(void)
   MX_DMA_Init();
   MX_USART3_UART_Init();
   MX_I2C1_Init();
-  MX_SAI1_Init();
+  MX_I2S1_Init();
+  MX_I2S2_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -212,13 +214,13 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_SAI1
-                              |RCC_PERIPHCLK_I2C1;
-  PeriphClkInitStruct.PLLSAI.PLLSAIN = 192;
-  PeriphClkInitStruct.PLLSAI.PLLSAIQ = 2;
-  PeriphClkInitStruct.PLLSAI.PLLSAIP = RCC_PLLSAIP_DIV2;
-  PeriphClkInitStruct.PLLSAIDivQ = 1;
-  PeriphClkInitStruct.Sai1ClockSelection = RCC_SAI1CLKSOURCE_PLLSAI;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C1
+                              |RCC_PERIPHCLK_I2S;
+  PeriphClkInitStruct.PLLI2S.PLLI2SN = 192;
+  PeriphClkInitStruct.PLLI2S.PLLI2SR = 2;
+  PeriphClkInitStruct.PLLI2S.PLLI2SQ = 2;
+  PeriphClkInitStruct.PLLI2SDivQ = 1;
+  PeriphClkInitStruct.I2sClockSelection = RCC_I2SCLKSOURCE_PLLI2S;
   PeriphClkInitStruct.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
   PeriphClkInitStruct.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
@@ -274,49 +276,68 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief SAI1 Initialization Function
+  * @brief I2S1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_SAI1_Init(void)
+static void MX_I2S1_Init(void)
 {
 
-  /* USER CODE BEGIN SAI1_Init 0 */
+  /* USER CODE BEGIN I2S1_Init 0 */
 
-  /* USER CODE END SAI1_Init 0 */
+  /* USER CODE END I2S1_Init 0 */
 
-  /* USER CODE BEGIN SAI1_Init 1 */
+  /* USER CODE BEGIN I2S1_Init 1 */
 
-  /* USER CODE END SAI1_Init 1 */
-  hsai_BlockA1.Instance = SAI1_Block_A;
-  hsai_BlockA1.Init.AudioMode = SAI_MODESLAVE_RX;
-  hsai_BlockA1.Init.Synchro = SAI_ASYNCHRONOUS;
-  hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
-  hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
-  hsai_BlockA1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
-  hsai_BlockA1.Init.MonoStereoMode = SAI_STEREOMODE;
-  hsai_BlockA1.Init.CompandingMode = SAI_NOCOMPANDING;
-  hsai_BlockA1.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockA1, SAI_I2S_STANDARD, SAI_PROTOCOL_DATASIZE_32BIT, 2) != HAL_OK)
+  /* USER CODE END I2S1_Init 1 */
+  hi2s1.Instance = SPI1;
+  hi2s1.Init.Mode = I2S_MODE_SLAVE_TX;
+  hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s1.Init.DataFormat = I2S_DATAFORMAT_32B;
+  hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_48K;
+  hi2s1.Init.CPOL = I2S_CPOL_LOW;
+  hi2s1.Init.ClockSource = I2S_CLOCK_PLL;
+  if (HAL_I2S_Init(&hi2s1) != HAL_OK)
   {
     Error_Handler();
   }
-  hsai_BlockB1.Instance = SAI1_Block_B;
-  hsai_BlockB1.Init.AudioMode = SAI_MODESLAVE_TX;
-  hsai_BlockB1.Init.Synchro = SAI_SYNCHRONOUS;
-  hsai_BlockB1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
-  hsai_BlockB1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
-  hsai_BlockB1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
-  hsai_BlockB1.Init.MonoStereoMode = SAI_STEREOMODE;
-  hsai_BlockB1.Init.CompandingMode = SAI_NOCOMPANDING;
-  hsai_BlockB1.Init.TriState = SAI_OUTPUT_NOTRELEASED;
-  if (HAL_SAI_InitProtocol(&hsai_BlockB1, SAI_I2S_STANDARD, SAI_PROTOCOL_DATASIZE_32BIT, 2) != HAL_OK)
+  /* USER CODE BEGIN I2S1_Init 2 */
+
+  /* USER CODE END I2S1_Init 2 */
+
+}
+
+/**
+  * @brief I2S2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2S2_Init(void)
+{
+
+  /* USER CODE BEGIN I2S2_Init 0 */
+
+  /* USER CODE END I2S2_Init 0 */
+
+  /* USER CODE BEGIN I2S2_Init 1 */
+
+  /* USER CODE END I2S2_Init 1 */
+  hi2s2.Instance = SPI2;
+  hi2s2.Init.Mode = I2S_MODE_SLAVE_RX;
+  hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s2.Init.DataFormat = I2S_DATAFORMAT_32B;
+  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_48K;
+  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
+  if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN SAI1_Init 2 */
+  /* USER CODE BEGIN I2S2_Init 2 */
 
-  /* USER CODE END SAI1_Init 2 */
+  /* USER CODE END I2S2_Init 2 */
 
 }
 
@@ -372,12 +393,12 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
-  /* DMA2_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
-  /* DMA2_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
+  /* DMA1_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
+  /* DMA2_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
 }
 
@@ -391,13 +412,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LD1_Pin|ST1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);

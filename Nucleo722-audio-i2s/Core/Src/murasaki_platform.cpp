@@ -47,8 +47,14 @@ extern UART_HandleTypeDef huart2;
 #endif
 extern UART_HandleTypeDef huart3;
 extern I2C_HandleTypeDef hi2c1;
+
+#if 0
 extern SAI_HandleTypeDef hsai_BlockA1;
 extern SAI_HandleTypeDef hsai_BlockB1;
+#endif
+
+extern I2S_HandleTypeDef hi2s1;
+extern I2S_HandleTypeDef hi2s2;
 /* -------------------- PLATFORM ALGORITHM ------------------------- */
 
 void TaskBodyFunction(const void *ptr);
@@ -87,13 +93,23 @@ void InitPlatform()
                                                       12000000,
                                                       murasaki::platform.i2c_master,
                                                       0x38);
-
+#if 0
     murasaki::platform.audio_adapter = new murasaki::SaiPortAdaptor(
                                                                    &hsai_BlockB1,
                                                                    &hsai_BlockA1);
+#else
+    murasaki::platform.audio_adapter = new murasaki::I2sPortAdapter(
+                                                                    &hi2s1,
+                                                                    &hi2s2);
+#endif
+    MURASAKI_ASSERT(nullptr != murasaki::platform.audio_adapter)
+
+
     murasaki::platform.audio = new murasaki::DuplexAudio(
                                                          murasaki::platform.audio_adapter,
                                                          CHANNEL_LEN);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.audio)
+
 
     // Status LED
     murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
@@ -138,6 +154,10 @@ void ExecPlatform()
     murasaki::platform.st1->Set();
 
     I2cSearch(murasaki::platform.i2c_master);
+
+    murasaki::Sleep(500);
+
+    murasaki::debugger->Printf("DWT_CTRL : %08x \n", DWT->CTRL);
 
     murasaki::platform.task1->Start();
 
@@ -490,6 +510,64 @@ void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
 
 #endif
 
+/* ------------------ I2S  -------------------------- */
+#ifdef HAL_I2S_MODULE_ENABLED
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer halfway.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
+ */
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
+#if 0
+        murasaki::platform.st0->Set();
+        murasaki::platform.st1->Clear();
+#endif
+        return;
+    }
+}
+
+
+/**
+ * @brief Optional SAI interrupt handler at buffer transfer complete.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * Invoked after SAI RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
+ */
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hsai) {
+    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
+#if 0
+        murasaki::platform.st0->Clear();
+        murasaki::platform.st1->Set();
+#endif
+        return;
+    }
+}
+
+/**
+ * @brief Optional SAI error interrupt handler.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hsai Handler of the SAI device.
+ * @details
+ * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
+ * Note that DuplexAudio::HandleError() trigger a hard fault.
+ * So, never return.
+ */
+
+void HAL_I2S_ErrorCallback(I2S_HandleTypeDef *hsai) {
+    if (murasaki::platform.audio->HandleError(hsai))
+        return;
+}
+
+#endif
+
 /* ------------------ ASSERTION AND ERROR -------------------------- */
 
 void CustomAssertFailed(uint8_t *file, uint32_t line)
@@ -526,7 +604,7 @@ void TaskBodyFunction(const void *ptr) {
 
     murasaki::platform.codec->Start();
 
-    murasaki::SetSyslogFacilityMask(murasaki::kfaAudioCodec);
+    murasaki::SetSyslogFacilityMask(murasaki::kfaI2s | murasaki::kfaAudio);
     murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
 
     int count = 0;
@@ -560,7 +638,7 @@ void TaskBodyFunction(const void *ptr) {
     // Loop forever
     while (true) {
 
-        if (count > 10) {
+        if (count > 4) {
             // disable debug message printing
             murasaki::SetSyslogSererityThreshold(murasaki::kseError);
         }
