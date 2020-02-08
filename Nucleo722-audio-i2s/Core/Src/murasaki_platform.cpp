@@ -523,10 +523,8 @@ void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
  */
 void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
     if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
-#if 1
         murasaki::platform.st0->Set();
         murasaki::platform.st1->Clear();
-#endif
         return;
     }
 }
@@ -543,10 +541,8 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
  */
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hsai) {
     if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
-#if 1
         murasaki::platform.st0->Clear();
         murasaki::platform.st1->Set();
-#endif
         return;
     }
 }
@@ -604,8 +600,10 @@ void TaskBodyFunction(const void *ptr) {
 
     murasaki::platform.codec->Start();
 
+#if 0
     murasaki::SetSyslogFacilityMask(murasaki::kfaI2s | murasaki::kfaAudio);
     murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
+#endif
 
     int count = 0;
 
