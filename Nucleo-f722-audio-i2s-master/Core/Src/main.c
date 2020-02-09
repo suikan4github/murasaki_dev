@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "murasaki_platform.hpp"
 
 /* USER CODE END Includes */
 
@@ -60,10 +61,10 @@ osThreadId defaultTaskHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_I2S1_Init(void);
 static void MX_I2S2_Init(void);
-static void MX_DMA_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -110,10 +111,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART3_UART_Init();
   MX_I2S1_Init();
   MX_I2S2_Init();
-  MX_DMA_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -240,9 +241,9 @@ static void MX_I2S1_Init(void)
   hi2s1.Instance = SPI1;
   hi2s1.Init.Mode = I2S_MODE_MASTER_TX;
   hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s1.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s1.Init.DataFormat = I2S_DATAFORMAT_32B;
   hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_48K;
   hi2s1.Init.CPOL = I2S_CPOL_LOW;
   hi2s1.Init.ClockSource = I2S_CLOCK_PLL;
   if (HAL_I2S_Init(&hi2s1) != HAL_OK)
@@ -273,9 +274,9 @@ static void MX_I2S2_Init(void)
   hi2s2.Instance = SPI2;
   hi2s2.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s2.Init.DataFormat = I2S_DATAFORMAT_32B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_48K;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
   if (HAL_I2S_Init(&hi2s2) != HAL_OK)
@@ -414,6 +415,8 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+  InitPlatform();
+  ExecPlatform();
   /* Infinite loop */
   for(;;)
   {
@@ -468,6 +471,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    CustomAssertFailed(file, line);
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
