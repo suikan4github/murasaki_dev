@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=/home/takemasa/git/murasaki_audio_dev/Nucleo722-audio/Inc
+HeaderPath=/home/takemasa/git/murasaki_dev/Nucleo722-audio/Inc
 HeaderFiles=FreeRTOSConfig.h;stm32f7xx_it.h;stm32f7xx_hal_conf.h;main.h;
-SourcePath=/home/takemasa/git/murasaki_audio_dev/Nucleo722-audio/Src
+SourcePath=/home/takemasa/git/murasaki_dev/Nucleo722-audio/Src
 SourceFiles=freertos.c;stm32f7xx_it.c;stm32f7xx_hal_msp.c;stm32f7xx_hal_timebase_tim.c;main.c;
 
 [PreviousLibFiles]

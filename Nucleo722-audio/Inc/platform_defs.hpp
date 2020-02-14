@@ -41,7 +41,7 @@ struct Platform
 
     AudioCodecStrategy * codec;    ///< Audio Codec.
 
-    SaiPortAdaptor *audioAdapter;
+    SaiPortAdapter *audioAdapter;
     DuplexAudio * audio;
 
     BitOutStrategy * led;           ///< GP out under test

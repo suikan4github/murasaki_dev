@@ -97,13 +97,13 @@ void InitPlatform()
 
     murasaki::platform.audio = new murasaki::DuplexAudio(
                                                          murasaki::platform.audio_port,
-                                                         48);
+                                                         CHANNEL_LEN);
     MURASAKI_ASSERT(nullptr != murasaki::platform.audio)
 
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
-                                                        256,
+                                                        512,
                                                         murasaki::ktpRealtime,
                                                         nullptr,
                                                         &TaskBodyFunction
