@@ -13,3 +13,6 @@
 [submodule "Nucleo-H743-audio/murasaki"]
 	path = Nucleo-H743-audio/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "Nucleo-f446-64-encoder-test/murasaki"]
+	path = Nucleo-f446-64-encoder-test/murasaki
+	url = git@github.com:suikan4github/murasaki.git
