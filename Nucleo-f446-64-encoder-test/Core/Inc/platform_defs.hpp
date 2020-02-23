@@ -34,11 +34,15 @@ namespace murasaki {
 struct Platform
 {
     // Platform dependent Custom variables.
-    UartStrategy * uart_console;    ///< UART wrapping class object for debugging
-    LoggerStrategy * logger;        ///< logging class object for debugger
+    UartStrategy *uart_console;    ///< UART wrapping class object for debugging
+    LoggerStrategy *logger;        ///< logging class object for debugger
 
-    BitOutStrategy * led;           ///< GP out under test
-    TaskStrategy * task1;           ///< Task under test
+    BitOutStrategy *led;           ///< GP out under test
+    TaskStrategy *task1;           ///< Task under test
+
+    QuadratureEncoderStrategy *encoder;
+
+    AdcStrategy *adc;
 
     // Following block is just sample
 
@@ -64,17 +68,11 @@ struct Platform
  */
 extern Platform platform;
 
-
-
-
 /**
  * \}
  * end of defgroup PLATFORM_GROUP
  */
 
-
-
 } /* namespace murasaki */
-
 
 #endif /* PLATFORM_DEFS_HPP_ */

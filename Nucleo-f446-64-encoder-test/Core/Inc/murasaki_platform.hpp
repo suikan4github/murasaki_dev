@@ -11,6 +11,8 @@
 #ifndef MURASAKI_PLATFORM_HPP_
 #define MURASAKI_PLATFORM_HPP_
 
+#include <murasaki_include_stub.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -70,7 +72,7 @@ void ExecPlatform();
  * By default, this routine output a message with location informaiton
  * to the debugger console.
  */
-void CustomAssertFailed(uint8_t* file, uint32_t line);
+void CustomAssertFailed(uint8_t *file, uint32_t line);
 
 /**
  * @brief Hook for the default exception handler. Never return.
@@ -118,7 +120,7 @@ void CustomDefaultHandler();
  * Do not call from application. This is murasaki_internal_only.
  *
  */
-void PrintFaultResult(unsigned int * stack_pointer);
+void PrintFaultResult(unsigned int *stack_pointer);
 
 /**
  * @brief StackOverflow hook for FreeRTOS
@@ -134,6 +136,8 @@ void PrintFaultResult(unsigned int * stack_pointer);
  * Because this function prototype is declared by system,
  * we don't have prototype in the murasaki_platform.hpp.
  */
+
+void USR_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
 #ifdef __cplusplus
 }

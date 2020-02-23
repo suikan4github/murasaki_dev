@@ -40,6 +40,7 @@ murasaki::Debugger *murasaki::debugger;
 // Following block is just sample.
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim2;
+extern ADC_HandleTypeDef hadc1;
 
 /* -------------------- PLATFORM Prototypes ------------------------- */
 
@@ -79,6 +80,10 @@ void InitPlatform()
     murasaki::platform.led = new murasaki::BitOut(LD2_GPIO_Port, LD2_Pin);
     MURASAKI_ASSERT(nullptr != murasaki::platform.led)
 
+    // Testing the Quadrapture encoder.
+    murasaki::platform.encoder = new murasaki::QuadratureEncoder(&htim2);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.encoder)
+
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
@@ -89,6 +94,9 @@ void InitPlatform()
                                                         );
     MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
 
+    murasaki::platform.adc = new murasaki::Adc(&hadc1);
+    MURASAKI_ASSERT(nullptr != murasaki::platform.adc)
+
     // Following block is just for sample.
 
 }
@@ -98,22 +106,34 @@ void ExecPlatform()
     // counter for the demonstration.
     unsigned int count = 0, last_count = 0;
 
-    HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-
     // Following blocks are sample.
     murasaki::platform.task1->Start();
+
+    murasaki::SetSyslogFacilityMask(murasaki::kfaAdc);
+    murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
+
+    murasaki::platform.adc->SetSampleClock(ADC_CHANNEL_TEMPSENSOR, ADC_SAMPLETIME_56CYCLES);
 
     // Loop forever
     while (true) {
 
-        count = __HAL_TIM_GET_COUNTER(&htim2);
-
+#if 0
+        count = murasaki::platform.encoder->Get();
         if (count != last_count) {
             murasaki::debugger->Printf("timer counter : %d \n", count);
             last_count = count;
         }
+
         // wait for a while
         murasaki::Sleep(10);
+#else
+        float value;
+
+        murasaki::platform.adc->Convert(ADC_CHANNEL_TEMPSENSOR, &value);
+
+        // wait for a while
+        murasaki::Sleep(1000);
+#endif
     }
 }
 
@@ -452,6 +472,37 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             murasaki::platform.sync_with_button->Release();
     }
 #endif
+}
+
+/* ------------------ TIMER -------------------------- */
+
+void USR_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+                                   {
+    if (htim == &htim2) {
+        murasaki::debugger->Printf("HAL_TIM_PeriodElapsedCallback\n");
+    }
+
+}
+
+void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim)
+                             {
+    if (htim == &htim2) {
+        murasaki::debugger->Printf("HAL_TIM_TriggerCallback\n");
+    }
+
+}
+
+/* ------------------ ADC -------------------------- */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+                              {
+    if (murasaki::platform.adc->ConversionCompleteCallback(hadc))
+        return;
+}
+
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+                           {
+    if (murasaki::platform.adc->HandleError(hadc))
+        return;
 }
 
 /* ------------------ ASSERTION AND ERROR -------------------------- */
