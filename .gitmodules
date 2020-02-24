@@ -16,3 +16,6 @@
 [submodule "Nucleo-f446-64-encoder-test/murasaki"]
 	path = Nucleo-f446-64-encoder-test/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "Nucleo-h743-duplex-i2s/murasaki"]
+	path = Nucleo-h743-duplex-i2s/murasaki
+	url = git@github.com:suikan4github/murasaki.git
