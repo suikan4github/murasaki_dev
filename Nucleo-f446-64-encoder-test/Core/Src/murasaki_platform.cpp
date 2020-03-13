@@ -109,9 +109,6 @@ void ExecPlatform()
     // Following blocks are sample.
     murasaki::platform.task1->Start();
 
-    murasaki::SetSyslogFacilityMask(murasaki::kfaAdc);
-    murasaki::SetSyslogSererityThreshold(murasaki::kseDebug);
-
     murasaki::platform.adc->SetSampleClock(ADC_CHANNEL_TEMPSENSOR, ADC_SAMPLETIME_56CYCLES);
 
     // Loop forever
@@ -130,6 +127,9 @@ void ExecPlatform()
         float value;
 
         murasaki::platform.adc->Convert(ADC_CHANNEL_TEMPSENSOR, &value);
+
+        unsigned int temp = value * 1000;
+        murasaki::debugger->Printf("Temperature : %d \n", temp);
 
         // wait for a while
         murasaki::Sleep(1000);
@@ -438,7 +438,116 @@ void HAL_SAI_ErrorCallback(SAI_HandleTypeDef * hsai) {
 
 #endif
 
-/* -------------------------- GPIO ---------------------------------- */
+/* ------------------ I2S  -------------------------- */
+#ifdef HAL_I2S_MODULE_ENABLED
+/**
+ * @brief Optional I2S interrupt handler at buffer transfer halfway.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hi2s Handler of the I2S device.
+ * @details
+ * Invoked after I2S RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
+ */
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
+    if (murasaki::platform.audio->DmaCallback(hi2s, 0)) {
+        murasaki::platform.led_st0->Clear();
+        murasaki::platform.led_st1->Set();
+        return;
+    }
+}
+
+/**
+ * @brief Optional I2S interrupt handler at buffer transfer complete.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hi2s Handler of the I2S device.
+ * @details
+ * Invoked after I2S RX DMA complete interrupt is at halfway.
+ * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
+ * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
+ */
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s) {
+    if (murasaki::platform.audio->DmaCallback(hi2s, 1)) {
+        murasaki::platform.led_st0->Set();
+        murasaki::platform.led_st1->Clear();
+        return;
+    }
+}
+
+/**
+ * @brief Optional I2S error interrupt handler.
+ * @ingroup MURASAKI_PLATFORM_GROUP
+ * @param hi2s Handler of the I2S device.
+ * @details
+ * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
+ * Note that DuplexAudio::HandleError() trigger a hard fault.
+ * So, never return.
+ */
+
+void HAL_I2S_ErrorCallback(I2S_HandleTypeDef *hi2s) {
+    if (murasaki::platform.audio->HandleError(hi2s))
+        return;
+}
+
+#endif
+
+/* ------------------ TIMER -------------------------- */
+
+void USR_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+                                   {
+    if (htim == &htim2) {
+        murasaki::debugger->Printf("HAL_TIM_PeriodElapsedCallback\n");
+    }
+
+}
+
+void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim)
+                             {
+    if (htim == &htim2) {
+        murasaki::debugger->Printf("HAL_TIM_TriggerCallback\n");
+    }
+
+}
+
+/* ------------------ ADC -------------------------- */
+
+#ifdef HAL_ADC_MODULE_ENABLED
+
+/**
+ * @brief Optional interrupt handler for ADC.
+ * @param hadc Pointer to the Adc control structure.
+ * @details
+ * This is called from inside of HAL when an ADC conversion is done.
+ *
+ * STM32Cube HAL has same name function internally.
+ * That function is invoked whenever an relevant interrupt happens.
+ * In the other hand, that function is declared as weak bound.
+ * As a result, this function overrides the default error interrupt call back.
+ *
+ */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+                              {
+    if (murasaki::platform.adc->ConversionCompleteCallback(hadc))
+        return;
+}
+
+/**
+ * @brief Optional interrupt handler for ADC.
+ * @param hadc Pointer to the Adc control structure.
+ * @details
+ * This is called from inside of HAL when an ADC conversion failed by Error.
+ *
+ *
+ */
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+                           {
+    if (murasaki::platform.adc->HandleError(hadc))
+        return;
+}
+
+#endif
+
+/* -------------------------- EXTI ---------------------------------- */
 
 /**
  * @brief Optional interrupt handling of EXTI
@@ -463,46 +572,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     // This switch can be configured as EXTI interrupt srouce.
     // In this sample, releasing the waiting task if interrupt comes.
 
-    // Check whether appropriate interrupt or not
-    if ( USER_Btn_Pin == GPIO_Pin) {
-        // Check whether sync object is ready or not.
-        // This check is essential from the interrupt before the platform variable is ready
-        if (murasaki::platform.sync_with_button != nullptr)
-        // release the waiting task
-            murasaki::platform.sync_with_button->Release();
-    }
+    // Check whether sync object is ready or not.
+    // This check is essential from the interrupt before the platform variable is ready
+    if (murasaki::platform.exti_b1 != nullptr)
+        // The Release member function return true, if the given parameter matched with
+        // its interrupt line.
+        if (murasaki::platform.exti_b1->Release(GPIO_Pin))
+            return;
+
 #endif
-}
-
-/* ------------------ TIMER -------------------------- */
-
-void USR_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-                                   {
-    if (htim == &htim2) {
-        murasaki::debugger->Printf("HAL_TIM_PeriodElapsedCallback\n");
-    }
-
-}
-
-void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim)
-                             {
-    if (htim == &htim2) {
-        murasaki::debugger->Printf("HAL_TIM_TriggerCallback\n");
-    }
-
-}
-
-/* ------------------ ADC -------------------------- */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-                              {
-    if (murasaki::platform.adc->ConversionCompleteCallback(hadc))
-        return;
-}
-
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
-                           {
-    if (murasaki::platform.adc->HandleError(hadc))
-        return;
 }
 
 /* ------------------ ASSERTION AND ERROR -------------------------- */
@@ -629,42 +707,3 @@ void TaskBodyFunction(const void *ptr)
         murasaki::Sleep(700);
     }
 }
-
-/**
- * @brief I2C device serach function
- * @param master Pointer to the I2C master controller object.
- * @details
- * Poll all device address and check the response. If no response(NAK),
- * there is no device.
- *
- * This function can be deleted if you don't use.
- */
-#if 0
-void I2cSearch(murasaki::I2CMasterStrategy * master)
-               {
-    uint8_t tx_buf[1];
-
-    murasaki::debugger->Printf("\n            Probing I2C devices \n");
-    murasaki::debugger->Printf("   | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-    murasaki::debugger->Printf("---+------------------------------------------------\n");
-
-    // Search raw
-    for (int raw = 0; raw < 128; raw += 16) {
-        // Search column
-        murasaki::debugger->Printf("%2x |", raw);
-        for (int col = 0; col < 16; col++) {
-            murasaki::I2cStatus result;
-            // check whether device exist or not.
-            result = master->Transmit(raw + col, tx_buf, 0);
-            if (result == murasaki::ki2csOK)  // device acknowledged.
-                murasaki::debugger->Printf(" %2X", raw + col); // print address
-            else if (result == murasaki::ki2csNak)  // no device
-                murasaki::debugger->Printf(" --");
-            else
-                murasaki::debugger->Printf(" ??");  // unpredicted error.
-        }
-        murasaki::debugger->Printf("\n");
-    }
-
-}
-#endif
