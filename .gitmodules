@@ -19,3 +19,6 @@
 [submodule "Nucleo-h743-duplex-i2s/murasaki"]
 	path = Nucleo-h743-duplex-i2s/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "nucleo-f446-64-release-preparation/murasaki"]
+	path = nucleo-f446-64-release-preparation/murasaki
+	url = git@github.com:suikan4github/murasaki.git
