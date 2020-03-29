@@ -104,7 +104,7 @@ void InitPlatform()
 void ExecPlatform()
 {
     // counter for the demonstration.
-    unsigned int count = 0, last_count = 0;
+    unsigned int count = 0;
 
     // Following blocks are sample.
     murasaki::platform.task1->Start();
@@ -113,27 +113,16 @@ void ExecPlatform()
 
     // Loop forever
     while (true) {
-
-#if 0
         count = murasaki::platform.encoder->Get();
-        if (count != last_count) {
-            murasaki::debugger->Printf("timer counter : %d \n", count);
-            last_count = count;
-        }
 
-        // wait for a while
-        murasaki::Sleep(10);
-#else
         float value;
-
         murasaki::platform.adc->Convert(ADC_CHANNEL_TEMPSENSOR, &value);
 
         unsigned int temp = value * 1000;
-        murasaki::debugger->Printf("Temperature : %d \n", temp);
+        murasaki::debugger->Printf("Temperature : %d, timer counter : %d \n", temp, count);
 
         // wait for a while
-        murasaki::Sleep(1000);
-#endif
+        murasaki::Sleep(300);
     }
 }
 
