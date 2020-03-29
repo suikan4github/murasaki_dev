@@ -39,7 +39,7 @@ void MasterTaskBodyFunction(const void *ptr) {
     // Display text on the LED module.
     murasaki::platform.i2c_master->Transmit(
                                             0x71,
-                                            reinterpret_cast<const uint8_t*>("End."),
+                                            reinterpret_cast<const uint8_t*>("Fin."),
                                             4);
 #endif
     // end of test. blink LED1
