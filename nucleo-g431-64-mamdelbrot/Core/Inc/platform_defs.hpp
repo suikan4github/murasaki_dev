@@ -35,7 +35,6 @@ struct Platform
     LoggerStrategy *logger;        ///< logging class object for debugger
 
     BitOutStrategy *led;           ///< GP out under test
-    TaskStrategy *task1;           ///< Task under test
 
     // Following block is just sample
 

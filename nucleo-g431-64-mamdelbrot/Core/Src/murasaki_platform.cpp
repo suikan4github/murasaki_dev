@@ -16,6 +16,12 @@
 // Include the prototype  of functions of this file.
 
 /* -------------------- PLATFORM Macros -------------------------- */
+#define MAXDEPTH 32
+#define YPICSIZE 55
+#define XPICSIZE 100
+
+#define XPOS(x)  ( float(x) / XPICSIZE - 0.5 ) * 4
+#define YPOS(y)  ( float(y) / YPICSIZE - 0.5 ) * 4
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
 
@@ -39,18 +45,11 @@ murasaki::Debugger *murasaki::debugger;
  */
 // Following block is just sample.
 // Original declaration is in the top of main.c.
-#if 0
-extern I2C_HandleTypeDef hi2c1;
-extern I2C_HandleTypeDef hi2c2;
-extern SPI_HandleTypeDef hspi1;
-extern SPI_HandleTypeDef hspi4;
-extern UART_HandleTypeDef huart2;
-#endif
 extern UART_HandleTypeDef hlpuart1;
 
 /* -------------------- PLATFORM Prototypes ------------------------- */
 
-void TaskBodyFunction(const void *ptr);
+unsigned int mandelbrot(float x, float y, int maxn);
 
 /* -------------------- PLATFORM Implementation ------------------------- */
 
@@ -86,46 +85,53 @@ void InitPlatform()
     murasaki::platform.led = new murasaki::BitOut(LD2_GPIO_Port, LD2_Pin);
     MURASAKI_ASSERT(nullptr != murasaki::platform.led)
 
-    // For demonstration of FreeRTOS task.
-    murasaki::platform.task1 = new murasaki::SimpleTask(
-                                                        "task1",
-                                                        256,
-                                                        murasaki::ktpNormal,
-                                                        nullptr,
-                                                        &TaskBodyFunction
-                                                        );
-    MURASAKI_ASSERT(nullptr != murasaki::platform.task1)
-
-    // Following block is just for sample.
-#if 0
-    // For demonstration of the serial communication.
-    murasaki::platform.uart = new murasaki::Uart(&huart2);
-    // For demonstration of master and slave I2C
-    murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
-    murasaki::platform.i2c_slave = new murasaki::I2cSlave(&hi2c2);
-    // For demonstration of master and slave SPI
-    murasaki::platform.spi_master = new murasaki::SpiMaster(&hspi1);
-    murasaki::platform.spi_slave = new murasaki::SpiSlave(&hspi4);
-#endif
-
 }
+
+unsigned int mandelbrot(float x, float y, int maxn) {
+    float a = x;
+    float b = y;
+    int n = 0;
+
+    while (a * a + b * b < 4.0) {
+        // Limit depth by MAXZDEPTH -1
+        if (n >= maxn)
+            return maxn - 1;
+
+        // Y = Zn^2 + c : where c is x+iy;
+        float r = a * a - b * b + x;
+        float i = 2 * a * b + y;
+        // Update Zn+1 = Y
+        a = r;
+        b = i;
+        // Update depth
+        n++;
+    }
+
+    return n;
+}
+
+char mapper[] = " %#822oooo========----------------............................................................ ";
 
 void ExecPlatform()
 {
-    // counter for the demonstration.
-    int count = 0;
 
-    murasaki::platform.task1->Start();
+    murasaki::debugger->Printf("\n");
+    murasaki::debugger->Printf("    Mandelbrot set by NUCLEO-G431RB\n");
 
+    // Render the set.
+    for (int y = 0; y < YPICSIZE; y++) {
+        for (int x = 0; x < XPICSIZE; x++)
+            // print a message with counter value to the console.
+            murasaki::debugger->Printf("%c",
+                                       mapper[mandelbrot(XPOS(x),
+                                                         YPOS(y),
+                                                         sizeof(mapper) - 1)]);
+        murasaki::debugger->Printf("\n");
+    }
     // Loop forever
     while (true) {
-
-        // print a message with counter value to the console.
-        murasaki::debugger->Printf("Hello %d \n", count);
-
-        // update the counter value.
-        count++;
-
+        // Blink LED
+        murasaki::platform.led->Toggle();
         // wait for a while
         murasaki::Sleep(500);
     }
@@ -628,7 +634,8 @@ void PrintFaultResult(unsigned int *stack_pointer) {
     murasaki::debugger->Printf("       MMAR : 0x%08X \n", *(unsigned int*) 0xE000ED34);
     murasaki::debugger->Printf("       BFAR : 0x%08X \n", *(unsigned int*) 0xE000ED38);
 
-    murasaki::debugger->Printf("(Note : To avoid the stacking by C compiler, use release build to investigate the fault. ) \n");
+    murasaki::debugger->Printf(
+                               "(Note : To avoid the stacking by C compiler, use release build to investigate the fault. ) \n");
 
     murasaki::debugger->DoPostMortem();
 }
@@ -647,23 +654,3 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask,
     murasaki::debugger->Printf("Stack overflow at task : %s \n", pcTaskName);
     MURASAKI_ASSERT(false);
 }
-
-/* ------------------ User Functions -------------------------- */
-/**
- * @brief Demonstration task.
- * @param ptr Pointer to the parameter block
- * @details
- * Task body function as demonstration of the @ref murasaki::SimpleTask.
- *
- * You can delete this function if you don't use.
- */
-void TaskBodyFunction(const void *ptr)
-                      {
-
-    while (true)  // dummy loop
-    {
-        murasaki::platform.led->Toggle();  // toggling LED
-        murasaki::Sleep(700);
-    }
-}
-

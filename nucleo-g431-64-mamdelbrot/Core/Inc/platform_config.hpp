@@ -29,4 +29,6 @@
 // Define following macro as true to halt the cycle counter inside MURASAKI_SYSLOG macro.
 #define MURASAKI_CONFIG_NOSYCCNT false
 
+#define PLATFORM_CONFIG_DEBUG_BUFFER_SIZE  12000
+
 #endif /* PLATFORM_CONFIG_HPP_ */
