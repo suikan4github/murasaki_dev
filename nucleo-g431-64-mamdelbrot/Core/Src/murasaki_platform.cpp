@@ -93,7 +93,7 @@ unsigned int mandelbrot(float x, float y, int maxn) {
     int n = 0;
 
     while (a * a + b * b < 4.0) {
-        // Limit depth by MAXZDEPTH -1
+        // Limit depth by maxn -1
         if (n >= maxn)
             return maxn - 1;
 
@@ -103,7 +103,7 @@ unsigned int mandelbrot(float x, float y, int maxn) {
         // Update Zn+1 = Y
         a = r;
         b = i;
-        // Update depth
+        // Update N
         n++;
     }
 
