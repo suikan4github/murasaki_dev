@@ -22,3 +22,6 @@
 [submodule "nucleo-f446-64-release-preparation/murasaki"]
 	path = nucleo-f446-64-release-preparation/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "nucleo-g431-64-mamdelbrot/murasaki"]
+	path = nucleo-g431-64-mamdelbrot/murasaki
+	url = git@github.com:suikan4github/murasaki.git
