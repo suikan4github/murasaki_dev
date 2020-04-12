@@ -8,6 +8,7 @@
 
 // Include the definition created by CubeIDE.
 #include <murasaki_platform.hpp>
+#include "callbackrepositorysingleton.hpp"
 #include "main.h"
 
 // Include the murasaki class library.
@@ -58,7 +59,6 @@ extern I2S_HandleTypeDef hi2s2;
 /* -------------------- PLATFORM ALGORITHM ------------------------- */
 
 void TaskBodyFunction(const void *ptr);
-void I2cSearch(murasaki::I2CMasterStrategy *master);
 
 void InitPlatform()
 {
@@ -104,12 +104,10 @@ void InitPlatform()
 #endif
     MURASAKI_ASSERT(nullptr != murasaki::platform.audio_adapter)
 
-
     murasaki::platform.audio = new murasaki::DuplexAudio(
                                                          murasaki::platform.audio_adapter,
                                                          CHANNEL_LEN);
     MURASAKI_ASSERT(nullptr != murasaki::platform.audio)
-
 
     // Status LED
     murasaki::platform.st0 = new murasaki::BitOut(ST0_GPIO_Port, ST0_Pin);
@@ -168,260 +166,7 @@ void ExecPlatform()
 
     }
 }
-
-/* ------------------------- UART ---------------------------------- */
-
-/**
- * @brief Essential to sync up with UART.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param huart
- * @details
- * This is called from inside of HAL when an UART transmission done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default TX interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::Uart::TransmissionCompleteCallback() function.
- */
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-                             {
-    // Poll all uart tx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-    if (murasaki::platform.uart_console->TransmitCompleteCallback(huart))
-        return;
-
-}
-
-/**
- * @brief Essential to sync up with UART.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param huart
- * @details
- * This is called from inside of HAL when an UART receive done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default RX interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::Uart::ReceiveCompleteCallback() function.
- */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-                             {
-    // Poll all uart rx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-    if (murasaki::platform.uart_console->ReceiveCompleteCallback(huart))
-        return;
-
-}
-
-/**
- * @brief Optional error handling of UART
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param huart
- * @details
- * This is called from inside of HAL when an UART error interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default error interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::Uart::HandleError() function.
- */
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-    // Poll all uart error related interrupt receivers.
-    // If hit, return. If not hit,check next.
-    if (murasaki::platform.uart_console->HandleError(huart))
-        return;
-
-}
-
-/* -------------------------- SPI ---------------------------------- */
-
-#ifdef HAL_SPI_MODULE_ENABLED
-
-/**
- * @brief Essential to sync up with SPI.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hspi
- * @details
- * This is called from inside of HAL when an SPI transfer done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default TX/RX interrupt call back.
- *
- * In this call back, the SPI device handle have to be passed to the
- * murasaki::Spi::TransmitAndReceiveCompleteCallback () function.
- */
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    // Poll all SPI TX RX related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 0
-     if ( murasaki::platform.spi1->TransmitAndReceiveCompleteCallback(hspi) )
-     return;
-#endif
-}
-
-/**
- * @brief Optional error handling of SPI
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hspi
- * @details
- * This is called from inside of HAL when an SPI error interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default error interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::Uart::HandleError() function.
- */
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef * hspi) {
-    // Poll all SPI error interrupt related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 0
-     if ( murasaki::platform.spi1->HandleError(hspi) )
-     return;
-#endif
-}
-
-#endif
-
-/* -------------------------- I2C ---------------------------------- */
-
-#ifdef HAL_I2C_MODULE_ENABLED
-
-/**
- * @brief Essential to sync up with I2C.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hi2c
- * @details
- * This is called from inside of HAL when an I2C transmission done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default TX interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::I2c::TransmitCompleteCallback() function.
- */
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
-                                  {
-    // Poll all I2C master tx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 1
-    if (murasaki::platform.i2c_master->TransmitCompleteCallback(hi2c))
-        return;
-#endif
-}
-
-/**
- * @brief Essential to sync up with I2C.
- * @param hi2c
- * @details
- * This is called from inside of HAL when an I2C receive done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default RX interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::Uart::ReceiveCompleteCallback() function.
- */
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    // Poll all I2C master rx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 1
-    if (murasaki::platform.i2c_master->ReceiveCompleteCallback(hi2c))
-        return;
-#endif
-}
-/**
- * @brief Essential to sync up with I2C.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hi2c
- * @details
- * This is called from inside of HAL when an I2C transmission done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default TX interrupt call back.
- *
- * In this call back, the I2C slave device handle have to be passed to the
- * murasaki::I2cSlave::TransmitCompleteCallback() function.
- */
-void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
-                                 {
-    // Poll all I2C master tx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 0
-    if (murasaki::platform.i2c_slave->TransmitCompleteCallback(hi2c))
-    return;
-#endif
-}
-
-/**
- * @brief Essential to sync up with I2C.
- * @param hi2c
- * @details
- * This is called from inside of HAL when an I2C receive done interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default RX interrupt call back.
- *
- * In this call back, the I2C slave device handle have to be passed to the
- * murasaki::I2cSlave::ReceiveCompleteCallback() function.
- */
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    // Poll all I2C master rx related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 0
-    if (murasaki::platform.i2c_slave->ReceiveCompleteCallback(hi2c))
-    return;
-#endif
-}
-
-/**
- * @brief Optional error handling of I2C
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hi2c
- * @details
- * This is called from inside of HAL when an I2C error interrupt is accepted.
- *
- * STM32Cube HAL has same name function internally.
- * That function is invoked whenever an relevant interrupt happens.
- * In the other hand, that function is declared as weak bound.
- * As a result, this function overrides the default error interrupt call back.
- *
- * In this call back, the uart device handle have to be passed to the
- * murasaki::I2c::HandleError() function.
- */
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    // Poll all I2C master error related interrupt receivers.
-    // If hit, return. If not hit,check next.
-#if 1
-    if (murasaki::platform.i2c_master->HandleError(hi2c))
-        return;
-#endif
-}
-
-#endif
-
-/* -------------------------- GPIO ---------------------------------- */
+/* -------------------------- EXTI ---------------------------------- */
 
 /**
  * @brief Optional interrupt handling of EXTI
@@ -455,135 +200,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             murasaki::platform.sync_with_button->Release();
     }
 #endif
-}
-
-/* ------------------ SAI  -------------------------- */
-#ifdef HAL_SAI_MODULE_ENABLED
-/**
- * @brief Optional SAI interrupt handler at buffer transfer halfway.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
- */
-void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
-        murasaki::platform.st0->Set();
-        murasaki::platform.st1->Clear();
-        return;
-    }
-}
-
-/**
- * @brief Optional SAI interrupt handler at buffer transfer complete.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
- */
-void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
-        murasaki::platform.st0->Clear();
-        murasaki::platform.st1->Set();
-        return;
-    }
-}
-
-/**
- * @brief Optional SAI error interrupt handler.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
- * Note that DuplexAudio::HandleError() trigger a hard fault.
- * So, never return.
- */
-
-void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->HandleError(hsai))
-        return;
-}
-
-#endif
-
-/* ------------------ I2S  -------------------------- */
-#ifdef HAL_I2S_MODULE_ENABLED
-/**
- * @brief Optional SAI interrupt handler at buffer transfer halfway.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 0 which mean the halfway interrupt.
- */
-void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 0)) {
-        murasaki::platform.st0->Set();
-        murasaki::platform.st1->Clear();
-        return;
-    }
-}
-
-
-/**
- * @brief Optional SAI interrupt handler at buffer transfer complete.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * Invoked after SAI RX DMA complete interrupt is at halfway.
- * This interrupt have to be forwarded to the  murasaki::DuplexAudio::ReceiveCallback().
- * The second parameter of the ReceiveCallback() have to be 1 which mean the complete interrupt.
- */
-void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->DmaCallback(hsai, 1)) {
-        murasaki::platform.st0->Clear();
-        murasaki::platform.st1->Set();
-        return;
-    }
-}
-
-/**
- * @brief Optional SAI error interrupt handler.
- * @ingroup MURASAKI_PLATFORM_GROUP
- * @param hsai Handler of the SAI device.
- * @details
- * The error have to be forwarded to murasaki::DuplexAudio::HandleError().
- * Note that DuplexAudio::HandleError() trigger a hard fault.
- * So, never return.
- */
-
-void HAL_I2S_ErrorCallback(I2S_HandleTypeDef *hsai) {
-    if (murasaki::platform.audio->HandleError(hsai))
-        return;
-}
-
-#endif
-
-/* ------------------ ASSERTION AND ERROR -------------------------- */
-
-void CustomAssertFailed(uint8_t *file, uint32_t line)
-                        {
-    murasaki::debugger->Printf("Wrong parameters value: file %s on line %d\n",
-                               file,
-                               line);
-    // To stop the execusion, raise assert.
-    MURASAKI_ASSERT(false);
-}
-
-void CustomDefaultHandler() {
-    // Call debugger's post mortem processing. Never return again.
-    murasaki::debugger->DoPostMortem();
-}
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask,
-                                   signed char *pcTaskName) {
-    murasaki::debugger->Printf("Stack overflow at task :  %s \n", pcTaskName);
-    MURASAKI_ASSERT(false);
 }
 
 /* ------------------ User Function -------------------------- */
@@ -650,34 +266,9 @@ void TaskBodyFunction(const void *ptr) {
         }
         murasaki::platform.audio->TransmitAndReceive(l_tx, r_tx, l_rx, r_rx);
 
-    }
+        murasaki::platform.st0->Toggle();
+        murasaki::platform.st1->Toggle();
 
-}
-
-void I2cSearch(murasaki::I2CMasterStrategy *master)
-               {
-    uint8_t tx_buf[1];
-
-    murasaki::debugger->Printf("            Probing I2C devices \n");
-    murasaki::debugger->Printf("   | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-    murasaki::debugger->Printf("---+------------------------------------------------\n");
-
-    // Search raw
-    for (int raw = 0; raw < 128; raw += 16) {
-        // Search column
-        murasaki::debugger->Printf("%2x |", raw);
-        for (int col = 0; col < 16; col++) {
-            murasaki::I2cStatus result;
-            // check whether device exist or not.
-            result = master->Transmit(raw + col, tx_buf, 0);
-            if (result == murasaki::ki2csOK)  // device acknowledged.
-                murasaki::debugger->Printf(" %2X", raw + col);
-            else if (result == murasaki::ki2csNak)  // no device
-                murasaki::debugger->Printf(" --");
-            else
-                murasaki::debugger->Printf(" ??");  // unpredicted error.
-        }
-        murasaki::debugger->Printf("\n");
     }
 
 }
