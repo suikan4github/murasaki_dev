@@ -34,20 +34,20 @@ namespace murasaki {
 struct Platform
 {
     // Platform dependent Custom variables.
-    UartStrategy * uart_console;    ///< UART wrapping class object for debugging
-    LoggerStrategy * logger;        ///< logging class object for debugger
+    UartStrategy *uart_console;    ///< UART wrapping class object for debugging
+    LoggerStrategy *logger;        ///< logging class object for debugger
 
-    I2CMasterStrategy *i2c_master;  ///< I2C Master under test
+    I2cMasterStrategy *i2c_master;  ///< I2C Master under test
 
     AudioCodecStrategy *codec;    ///< Audio Codec.
 
     AudioPortAdapterStrategy *audio_adapter;
     DuplexAudio *audio;
 
-    BitOutStrategy * led;           ///< GP out under test
+    BitOutStrategy *led;           ///< GP out under test
     BitOutStrategy *st0;           ///< GP out under test
     BitOutStrategy *st1;           ///< GP out under test
-    TaskStrategy * task1;           ///< Task under test
+    TaskStrategy *task1;           ///< Task under test
     // Following block is just sample
 
 #if 0
@@ -72,17 +72,11 @@ struct Platform
  */
 extern Platform platform;
 
-
-
-
 /**
  * \}
  * end of defgroup PLATFORM_GROUP
  */
 
-
-
 } /* namespace murasaki */
-
 
 #endif /* PLATFORM_DEFS_HPP_ */
