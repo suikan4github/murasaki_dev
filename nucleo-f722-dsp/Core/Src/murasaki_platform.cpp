@@ -12,6 +12,7 @@
 
 // Include the murasaki class library.
 #include "murasaki.hpp"
+#include "arm_math.h"
 
 // Include the prototype  of functions of this file.
 
@@ -54,7 +55,7 @@ void TaskBodyFunction(const void *ptr);
 
 /* -------------------- PLATFORM Implementation ------------------------- */
 
-// Initialization of the asystem. 
+// Initialization of the asystem.
 void InitPlatform()
 {
 #if ! MURASAKI_CONFIG_NOCYCCNT
@@ -114,16 +115,36 @@ void InitPlatform()
 // main routine of the system.
 void ExecPlatform()
 {
+    const int taps = 100;
+    const int blocksize = 100;
+
+    arm_fir_instance_f32 filter;
+    arm_fir_init_f32(&filter,
+                     taps,
+                     new float[taps],
+                     new float[blocksize + taps + 1],
+                     blocksize);
+
+    float *in = new float[blocksize];
+    float *out = new float[blocksize];
+
     // counter for the demonstration.
     int count = 0;
 
-    murasaki::platform.task1->Start();
+//    murasaki::platform.task1->Start();
 
     // Loop forever
     while (true) {
 
+        int cycle = murasaki::GetCycleCounter();
+        arm_fir_f32(&filter,
+                    in,
+                    out,
+                    blocksize);
+        cycle -= murasaki::GetCycleCounter();
+
         // print a message with counter value to the console.
-        murasaki::debugger->Printf("Hello %d \n", count);
+        murasaki::debugger->Printf("Hello %d \n", -cycle);
 
         // update the counter value.
         count++;
