@@ -28,3 +28,9 @@
 [submodule "nucleo-f722-dsp/murasaki"]
 	path = nucleo-f722-dsp/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "git@github.com:suikan4github/murasaki.git"]
+	path = git@github.com:suikan4github/murasaki.git
+	url = git@github.com:suikan4github/murasaki.git
+[submodule "Nucleo-H743-audio-duplex-i2s/murasaki"]
+	path = Nucleo-H743-audio-duplex-i2s/murasaki
+	url = git@github.com:suikan4github/murasaki.git
