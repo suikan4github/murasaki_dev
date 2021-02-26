@@ -34,3 +34,6 @@
 [submodule "Nucleo-H743-audio-duplex-i2s/murasaki"]
 	path = Nucleo-H743-audio-duplex-i2s/murasaki
 	url = git@github.com:suikan4github/murasaki.git
+[submodule "nucleo-g431rb-pll/murasaki"]
+	path = nucleo-g431rb-pll/murasaki
+	url = https://github.com/suikan4github/murasaki.git
