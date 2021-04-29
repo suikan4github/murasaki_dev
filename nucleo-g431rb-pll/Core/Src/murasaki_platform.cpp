@@ -14,7 +14,7 @@
 #include "murasaki.hpp"
 
 // Include the prototype  of functions of this file.
-
+#include "Thirdparty/testsi5351.hpp"
 /* -------------------- PLATFORM Macros -------------------------- */
 
 /* -------------------- PLATFORM Type and classes -------------------------- */
@@ -54,7 +54,7 @@ void TaskBodyFunction(const void *ptr);
 
 /* -------------------- PLATFORM Implementation ------------------------- */
 
-// Initialization of the asystem. 
+// Initialization of the asystem.
 void InitPlatform()
 {
 #if ! MURASAKI_CONFIG_NOCYCCNT
@@ -119,11 +119,17 @@ void ExecPlatform()
 
     murasaki::platform.task1->Start();
 
+//    murasaki::SetSyslogFacilityMask(murasaki::kfaPll);
+//    murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
+
+    // 1kHz step test
+    if (murasaki::TestSi5351(1000))
+        murasaki::debugger->Printf("PLL test OK \n");
+    else
+        murasaki::debugger->Printf("PLL test NG \n");
+
     // Loop forever
     while (true) {
-
-        // print a message with counter value to the console.
-        murasaki::debugger->Printf("Hello %d \n", count);
 
         // update the counter value.
         count++;
