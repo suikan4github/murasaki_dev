@@ -119,14 +119,25 @@ void ExecPlatform()
 
     murasaki::platform.task1->Start();
 
-//    murasaki::SetSyslogFacilityMask(murasaki::kfaPll);
-//    murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
+    murasaki::SetSyslogFacilityMask(murasaki::kfaPll);
+    murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
 
-    // 1kHz step test
-    if (murasaki::TestSi5351(1000))
-        murasaki::debugger->Printf("PLL test OK \n");
+    // 1kHz step quick test
+    murasaki::debugger->Printf("1kHz step full test \n");
+    if (murasaki::TestSi5351(10000))
+        murasaki::debugger->Printf("PLL quick test OK \n");
     else
-        murasaki::debugger->Printf("PLL test NG \n");
+        murasaki::debugger->Printf("PLL quick test NG \n");
+
+    murasaki::SetSyslogFacilityMask(murasaki::kfaPll);
+    murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
+
+    // 1Hz step full test
+    murasaki::debugger->Printf("1Hz step full test \n");
+    if (murasaki::TestSi5351(1))
+        murasaki::debugger->Printf("PLL full test OK \n");
+    else
+        murasaki::debugger->Printf("PLL full test NG \n");
 
     // Loop forever
     while (true) {
