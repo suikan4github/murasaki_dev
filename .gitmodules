@@ -40,3 +40,6 @@
 [submodule "nucleo-g070rb-pll-signal\\murasaki"]
 	path = nucleo-g070rb-pll-signal\\murasaki
 	url = https://github.com/suikan4github/murasaki.git
+[submodule "nucleo-g070rb-pll-signal/murasaki"]
+	path = nucleo-g070rb-pll-signal/murasaki
+	url = https://github.com/suikan4github/murasaki.git
