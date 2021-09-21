@@ -92,6 +92,17 @@ void InitPlatform()
     murasaki::platform.i2c_master = new murasaki::I2cMaster(&hi2c1);
     MURASAKI_ASSERT(nullptr != murasaki::platform.i2c_master)
 
+    // Clock Generator Click Board
+    //@formatter:off
+    murasaki::platform.pll = new murasaki::Si5351(
+                                                  murasaki::platform.i2c_master,    // I2C controller
+                                                  0x60,                             // I2C slave address
+                                                  25000000                               // 25MHz for Clock Generator Click board
+            );
+                                                                                                                                                                                                            //@formatter:on
+
+    MURASAKI_ASSERT(nullptr != murasaki::platform.pll)
+
     // For demonstration of FreeRTOS task.
     murasaki::platform.task1 = new murasaki::SimpleTask(
                                                         "task1",
@@ -121,11 +132,52 @@ void ExecPlatform()
 {
     // counter for the demonstration.
     int count = 0;
-
-    murasaki::platform.task1->Start();
+    murasaki::Si5351ClockControl clockConfig;
 
     murasaki::I2cSearch(murasaki::platform.i2c_master);
 
+    murasaki::debugger->Printf("PLL reg 183 : 0x%02x\n", murasaki::platform.pll->GetRegister(183));
+    murasaki::platform.pll->SetRegister(183, 0x92);  // clock0, output disable )
+    murasaki::debugger->Printf("PLL reg 183 : 0x%02x\n", murasaki::platform.pll->GetRegister(183));
+    murasaki::debugger->Printf("PLL reg 0 : 0x%02x\n", murasaki::platform.pll->GetRegister(0));
+    murasaki::debugger->Printf("PLL reg 1 : 0x%02x\n", murasaki::platform.pll->GetRegister(1));
+    murasaki::debugger->Printf("PLL reg 2 : 0x%02x\n", murasaki::platform.pll->GetRegister(2));
+    murasaki::debugger->Printf("PLL reg 3 : 0x%02x\n", murasaki::platform.pll->GetRegister(3));
+    murasaki::platform.pll->SetRegister(3, 0x01);  // clock0, output disable )
+    murasaki::debugger->Printf("PLL reg 3 : 0x%02x\n", murasaki::platform.pll->GetRegister(3));
+
+    murasaki::debugger->Printf("PLL reg 16 : 0x%02x\n", murasaki::platform.pll->GetRegister(16));
+    murasaki::platform.pll->SetRegister(16, 0x01);  // clock0, power up, xtalin, 4mA )
+    murasaki::debugger->Printf("PLL reg 16 : 0x%02x\n", murasaki::platform.pll->GetRegister(16));
+    murasaki::debugger->Printf("PLL reg 44 : 0x%02x\n", murasaki::platform.pll->GetRegister(44));
+    murasaki::platform.pll->SetRegister(44, 0x00);  // set R0 to 0
+    murasaki::debugger->Printf("Writing reg 177 to reset\n");
+    murasaki::platform.pll->SetRegister(177, 0xa0);  // clock0, output disable )
+    murasaki::platform.pll->SetRegister(3, 0x00);  // clock0, output disable )
+    murasaki::debugger->Printf("PLL reg 44 : 0x%02x\n", murasaki::platform.pll->GetRegister(44));
+    murasaki::platform.pll->SetRegister(3, 0x00);  // clock0, output disable )
+    murasaki::debugger->Printf("PLL reg 3 : 0x%02x\n", murasaki::platform.pll->GetRegister(3));
+
+    clockConfig.fields.clk_idrv = murasaki::ks5351od4mA;
+    clockConfig.fields.clk_inv = false;
+    clockConfig.fields.clk_pdn = false;
+    clockConfig.fields.clk_src = murasaki::ks5351osNativeDivider;
+    clockConfig.fields.ms_int = false;
+    clockConfig.fields.ms_src = murasaki::ks5351PllA;
+
+    murasaki::platform.pll->SetClockConfig(0, clockConfig);
+
+#if 1
+    // Set frequency for test
+    //@formatter:off
+    murasaki::platform.pll->SetFrequency(
+                                    murasaki::ks5351PllA,
+                                         0,
+                                         100000);
+    murasaki::platform.pll->ResetPLL(murasaki::ks5351PllA);
+                                                                              //@formatter:on
+    murasaki::platform.task1->Start();
+#endif
     // Loop forever
     while (true) {
 

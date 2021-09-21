@@ -14,6 +14,8 @@
 #ifndef PLATFORM_DEFS_HPP_
 #define PLATFORM_DEFS_HPP_
 
+#include "si5351.hpp"
+
 namespace murasaki {
 /**
  * \brief Custom aggregation struct for user platform.
@@ -35,6 +37,7 @@ struct Platform
     LoggerStrategy *logger;        ///< logging class object for debugger
 
     I2cMasterStrategy *i2c_master;  ///< I2C Master under test
+    Si5351 *pll;
 
     BitOutStrategy *led;           ///< GP out under test
     TaskStrategy *task1;           ///< Task under test
