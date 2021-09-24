@@ -46,6 +46,7 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   uint32_t              uwPrescalerValue = 0;
   uint32_t              pFLatency;
   HAL_StatusTypeDef     status = HAL_OK;
+
   /* Enable TIM17 clock */
   __HAL_RCC_TIM17_CLK_ENABLE();
 

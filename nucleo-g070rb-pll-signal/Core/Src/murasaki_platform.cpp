@@ -100,7 +100,7 @@ void InitPlatform()
                                                   0x60,                             // I2C slave address
                                                   25000000                               // 25MHz for Clock Generator Click board
             );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        //@formatter:on
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            //@formatter:on
 
     MURASAKI_ASSERT(nullptr != murasaki::platform.pll)
 
@@ -282,12 +282,13 @@ void ExecPlatform()
                                          0,
                                          1,
                                     freq);
-#endif                                                                                                                                                                                                                                                                                                                                                             //@formatter:on
+#endif                                                                                                                                                                                                                                                                                                                                                                 //@formatter:on
     murasaki::platform.task1->Start();
 #endif
 
     murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
-    murasaki::TestSi5351Driver(100);
+    murasaki::TestSi5351Driver(1000);
+    murasaki::TestSi5351Driver(1);
 
 // Loop forever
     while (true) {
