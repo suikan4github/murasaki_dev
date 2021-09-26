@@ -162,6 +162,12 @@ void ExecPlatform()
 void TaskBodyFunction(const void *ptr)
                       {
 
+    for (int i = 0; i < 20; i++)  // dummy loop
+            {
+        murasaki::platform.led->Toggle();  // toggling LED
+        murasaki::Sleep(100);
+    }
+
     while (true)  // dummy loop
     {
         if (complete) {
