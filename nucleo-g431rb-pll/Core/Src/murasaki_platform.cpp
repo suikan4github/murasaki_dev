@@ -111,6 +111,8 @@ void InitPlatform()
 
 }
 
+bool complete = false;
+
 // main routine of the system.
 void ExecPlatform()
 {
@@ -136,6 +138,7 @@ void ExecPlatform()
     murasaki::debugger->Printf("1Hz step full test \n");
     murasaki::TestSi5351Driver(1);
 
+    complete = true;
     // Loop forever
     while (true) {
 
@@ -161,8 +164,20 @@ void TaskBodyFunction(const void *ptr)
 
     while (true)  // dummy loop
     {
-        murasaki::platform.led->Toggle();  // toggling LED
-        murasaki::Sleep(700);
+        if (complete) {
+            murasaki::platform.led->Toggle();  // toggling LED
+            murasaki::Sleep(250);
+            murasaki::platform.led->Toggle();  // toggling LED
+            murasaki::Sleep(250);
+            murasaki::platform.led->Toggle();  // toggling LED
+            murasaki::Sleep(250);
+            murasaki::platform.led->Toggle();  // toggling LED
+            murasaki::Sleep(1250);
+        }
+        else {
+            murasaki::platform.led->Toggle();  // toggling LED
+            murasaki::Sleep(1000);
+        }
     }
 }
 
