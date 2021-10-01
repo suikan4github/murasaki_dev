@@ -123,6 +123,7 @@ void ExecPlatform()
 
     murasaki::debugger->Printf("\n **************************************** \n");
     murasaki::debugger->Printf("Build : %s, %s \n", __DATE__, __TIME__);
+    murasaki::debugger->Printf("Hello \n");
 
     murasaki::SetSyslogFacilityMask(murasaki::kfaPll);
     murasaki::SetSyslogSeverityThreshold(murasaki::kseNotice);
