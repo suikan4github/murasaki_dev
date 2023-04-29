@@ -1,51 +1,12 @@
 [submodule "Nucleo722-audio/murasaki"]
 	path = Nucleo722-audio/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "nucleo-722-akashi-2-1.0/murasaki"]
-	path = nucleo-722-akashi-2-1.0/murasaki
-	url = git@github.com:suikan4github/murasaki.git
+	url = https://github.com/suikan4github/murasaki.git
 [submodule "nucleo-f446-64-akashi01/murasaki"]
 	path = nucleo-f446-64-akashi01/murasaki
 	url = https://github.com/suikan4github/murasaki.git
-[submodule "Nucleo722-audio-i2s/murasaki"]
-	path = Nucleo722-audio-i2s/murasaki
-	url = https://github.com/suikan4github/murasaki.git
-[submodule "Nucleo-H743-audio/murasaki"]
-	path = Nucleo-H743-audio/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "Nucleo-f446-64-encoder-test/murasaki"]
-	path = Nucleo-f446-64-encoder-test/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "Nucleo-h743-duplex-i2s/murasaki"]
-	path = Nucleo-h743-duplex-i2s/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "nucleo-f446-64-release-preparation/murasaki"]
-	path = nucleo-f446-64-release-preparation/murasaki
-	url = git@github.com:suikan4github/murasaki.git
 [submodule "nucleo-g431-64-mamdelbrot/murasaki"]
 	path = nucleo-g431-64-mamdelbrot/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "nucleo-f722-dsp/murasaki"]
-	path = nucleo-f722-dsp/murasaki
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "git@github.com:suikan4github/murasaki.git"]
-	path = git@github.com:suikan4github/murasaki.git
-	url = git@github.com:suikan4github/murasaki.git
-[submodule "Nucleo-H743-audio-duplex-i2s/murasaki"]
-	path = Nucleo-H743-audio-duplex-i2s/murasaki
-	url = git@github.com:suikan4github/murasaki.git
+	url = https://github.com/suikan4github/murasaki.git
 [submodule "nucleo-g431rb-pll/murasaki"]
 	path = nucleo-g431rb-pll/murasaki
-	url = https://github.com/suikan4github/murasaki.git
-[submodule "nucleo-g070rb-pll-signal\\murasaki"]
-	path = nucleo-g070rb-pll-signal\\murasaki
-	url = https://github.com/suikan4github/murasaki.git
-[submodule "nucleo-g070rb-pll-signal/murasaki"]
-	path = nucleo-g070rb-pll-signal/murasaki
-	url = https://github.com/suikan4github/murasaki.git
-[submodule "nucleo-h743zi-pll/murasaki"]
-	path = nucleo-h743zi-pll/murasaki
-	url = https://github.com/suikan4github/murasaki.git
-[submodule "nucleo-g431rb-separate/murasaki"]
-	path = nucleo-g431rb-separate/murasaki
 	url = https://github.com/suikan4github/murasaki.git
