@@ -7,3 +7,6 @@
 [submodule "nucle-g431-new-directory/murasaki"]
 	path = nucle-g431-new-directory/murasaki
 	url = https://github.com/suikan4github/murasaki.git
+[submodule "nucleo-g0b1re-new-dir/murasaki"]
+	path = nucleo-g0b1re-new-dir/murasaki
+	url = https://github.com/suikan4github/murasaki.git
